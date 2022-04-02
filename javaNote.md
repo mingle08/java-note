@@ -413,45 +413,60 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 ​	ConcurrentSkipListMap.java
 
 ### 19，dubbo的整体架构设计和分层
-（1）5个角色<br>
-    注册中心registry：服务注册与发现<br>
-    服务提供者provider：暴露服务<br>
-    服务消费者consumer：调用远程服务<br>
-    监控中心monitor：统计服务的调用次数和调用时间<br>
-    窗口container：服务允许窗口<br>
-（2）调用流程<br>
-    1: container容器负责启动、加载、运行provider<br>
-    2：provider在启动时，向registry中心注册自己提供的服务<br>
-    3：consumer在启动时，向registry中心订阅自己所需的服务<br>
-    4：registry返回服务提供者列表给consumer，如果有变更，registry将基于长连接发送变更给consumer<br>
-    5：consumer调用provider服务，基于负载均衡算法进行调用<br>
-    6：consumer调用provider的统计，基于短连接定时每分钟一次统计到monitor<br>
-（3）分层<br>
-    1：接口服务层（Service）：面向开发者、业务代码、接口、实现等<br>
-    2：配置层（Config）：对外配置接口，以ServiceConfig与ReferenceConfig为中心<br>
-    3：服务代理层（Proxy）：对生产者和消费者、dubbo都会产生一个代理类封装调用细节，业务层对调用细节无感<br>
-    4：服务注册层（Registry）：封装服务地址的注册与发现，以服务URL为中心<br>
-    5：路由层（Cluster）：封装多个提供者的路由和负载均衡，并桥接注册中心<br>
-    6：监控层（Monitor）：RPC调用次数和调用时间监控<br>
-    7：远程调用层（Protocal）：封装RPC调用<br>
-    8：信息交换层（Exchange）：封装请求响应模式，同步转异步<br>
-    9：网络传输层（Transport）：抽象mina和netty为统一接口，统一网络传输接口<br>
-    10：数据序列化层（Serialize）：数据传输的序列化和反序列化<br>
+#### （1）5个角色<br>
+* 注册中心registry：服务注册与发现<br>
+* 服务提供者provider：暴露服务<br>
+* 服务消费者consumer：调用远程服务<br>
+* 监控中心monitor：统计服务的调用次数和调用时间<br>
+* 窗口container：服务允许窗口<br>
+#### （2）调用流程<br>
+* container容器负责启动、加载、运行provider<br>
+* provider在启动时，向registry中心注册自己提供的服务<br>
+* consumer在启动时，向registry中心订阅自己所需的服务<br>
+* registry返回服务提供者列表给consumer，如果有变更，registry将基于长连接发送变更给consumer<br>
+* consumer调用provider服务，基于负载均衡算法进行调用<br>
+* consumer调用provider的统计，基于短连接定时每分钟一次统计到monitor<br>
+#### （3）分层<br>
+* 接口服务层（Service）：面向开发者、业务代码、接口、实现等<br>
+* 配置层（Config）：对外配置接口，以ServiceConfig与ReferenceConfig为中心<br>
+* 服务代理层（Proxy）：对生产者和消费者、dubbo都会产生一个代理类封装调用细节，业务层对调用细节无感<br>
+* 服务注册层（Registry）：封装服务地址的注册与发现，以服务URL为中心<br>
+* 路由层（Cluster）：封装多个提供者的路由和负载均衡，并桥接注册中心<br>
+* 监控层（Monitor）：RPC调用次数和调用时间监控<br>
+* 远程调用层（Protocal）：封装RPC调用<br>
+* 信息交换层（Exchange）：封装请求响应模式，同步转异步<br>
+* 网络传输层（Transport）：抽象mina和netty为统一接口，统一网络传输接口<br>
+* 数据序列化层（Serialize）：数据传输的序列化和反序列化<br>
 
 ### 20，ZAB协议与RAFT协议的区别
-    （1）ZAB<br>
-    Leader 一个zookeeper集群同一时刻仅能有一个Leader。Leader负责接收所有的客户端的请求。<br>
-    Follower 提供读服务，参与选举。<br>
-    Observer 仅提供读服务。<br>
+#### （1）ZAB<br>
+* Leader 一个zookeeper集群同一时刻仅能有一个Leader。Leader负责接收所有的客户端的请求。<br>
+* Follower 提供读服务，参与选举。<br>
+* Observer 仅提供读服务。<br>
 
-    （2）Raft<br>
-    Leader 负责接收所有的客户端的请求。<br>
-    Follower 读写请求都转发到Leader，参与选举。<br>
-    Candidate 每个节点上都有一个倒计时器 (Election Timeout)，时间随机在 150ms 到 300ms 之间。在一个节点倒计时结束 (Timeout) 后，这个节点的状态变成 Candidate 开始选举，它给其他几个节点发送选举请求 (RequestVote)。选举成功则变为Leader。<br>
+#### （2）Raft<br>
+* Leader 负责接收所有的客户端的请求。<br>
+* Follower 读写请求都转发到Leader，参与选举。<br>
+* Candidate 每个节点上都有一个倒计时器 (Election Timeout)，时间随机在 150ms 到 300ms 之间。在一个节点倒计时结束 (Timeout) 后，这个节点的状态变成 Candidate 开始选举，它给其他几个节点发送选举请求 (RequestVote)。选举成功则变为Leader。<br>
 
 ### 21，缓存雪崩、缓存穿透、缓存击穿
-    （1）缓存雪崩
-
-    （2）缓存穿透
-
-    （3）缓存击穿
+#### （1）缓存雪崩
+    	同一时间缓存大面积失效，导致后面的请求都会落到数据库上，造成数据库短时间内承受大量请求而崩掉
+#### 解决方案
+* 缓存数据的过期时间设置随机，防止同一时间大量数据过期现象发生
+* 给每一个缓存数据增加相应的缓存标记，记录缓存是否失效，如果缓存标记失效，则更新数据的缓存
+* 缓存预热
+* 互斥锁
+    
+#### （2）缓存穿透
+        缓存和数据库中都没有的数据，导致所有的请求都落到数据库上，造成数据库短时间内承受大量请求而崩掉
+#### 解决方案：
+* 接口层增加校验，如用户鉴权校验，id做基础校验，id<=0的直接拦截
+* 从缓存取不到的数据，在数据库中也没有取到，这时也可以将key-value写为key-null，缓存有效时间可以设置短一点，比如30秒（设置太长会导致正常情况也没法使用）。这样可以防止攻击用户反复用同一个id暴力攻击
+* 采用布隆过滤器，将所有可能存在的数据哈希到一个足够大的bitmap中，一个一定不存在的数据会被这个bitmap拦截掉，从而避免了对底层存储系统的查询压力
+    
+#### （3）缓存击穿
+        缓存中没有，但数据库中有的数据（一般是缓存时间到期），这时并发用户特别多，同时读缓存没读到数据，又数据库取数据，引起数据库压力瞬间增大，造成过大压力。和缓存雪崩不同的是，缓存击穿指并发查同一条数据，缓存雪崩是不同数据都过期了，很多数据都查不到从而查数据库
+#### 解决方案
+* 设置热点数据永远不过期
+* 互斥锁
