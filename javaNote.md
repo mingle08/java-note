@@ -6,8 +6,6 @@
 
 （3）CPU开销问题
 
-
-
 ### 2，CPU指令环
 
 Intel的CPU将特权级别分为4个级别：RING0,RING1,RING2,RING3。
@@ -15,8 +13,6 @@ Intel的CPU将特权级别分为4个级别：RING0,RING1,RING2,RING3。
 Windows只使用其中的两个级别RING0和RING3，RING0只给操作系统用，RING3谁都能用。如果普通应用程序企图执行RING0指令，则Windows会显示“非法指令”错误信息。
 
 ring0是指CPU的运行级别，ring0是最高级别，ring1次之，ring2更次之……
-
-
 
 ### 3，垃圾回收器
 
@@ -28,11 +24,11 @@ ring0是指CPU的运行级别，ring0是最高级别，ring1次之，ring2更次
 
 （4）CMS：concurrent mark sweep
 
-​	a. 对CPU资源敏感（会和服务抢资源）
+​    a. 对CPU资源敏感（会和服务抢资源）
 
-​	b. 无法处理浮动垃圾，有可能出现“Concurrent Mode Failure"失败进而导致另一次完全"stop the world"的Full GC的产生，临时启用Serial Old收集器来重新进行老年代的垃圾收集，但这样停顿时间就很长了
+​    b. 无法处理浮动垃圾，有可能出现“Concurrent Mode Failure"失败进而导致另一次完全"stop the world"的Full GC的产生，临时启用Serial Old收集器来重新进行老年代的垃圾收集，但这样停顿时间就很长了
 
-​	c. 大量空间碎片的产生
+​    c. 大量空间碎片的产生
 
 ### 4，CMS收集器
 
@@ -51,8 +47,6 @@ ring0是指CPU的运行级别，ring0是最高级别，ring1次之，ring2更次
 增量更新：黑色对象一旦新插入了指向白色对象的引用之后，它就变回灰色对象了
 
 SATB：无论引用关系删除与否，都会按照刚刚开始扫描那一刻的对象图快照来进行搜索
-
-
 
 ### 6，G1收集器
 
@@ -74,12 +68,9 @@ SATB：无论引用关系删除与否，都会按照刚刚开始扫描那一刻�
 
 （4）并发重映射
 
-
-
 ### 8，推荐用自定义的线程池
 
 ```java
-
 /** 
 FixedThreadPool和SingleThreadPool使用的队列是LinkedBlockingQueue,这是无界队列，允许请求的最大长度为：Integer.MAX_VALUE，
 可能会堆积大量的请求，从而导致OOM
@@ -140,7 +131,6 @@ public ThreadPoolExecutor(int corePoolSize,
         TimeUnit unit,
         BlockingQueue<Runnable> workQueue,
         RejectedExecutionHandler handler)
-
 ```
 
 ### 9，HashMap中能保证有序的是哪个Map ？
@@ -151,7 +141,6 @@ The iteration ordering method for this linked hash map: true for access-order, f
 true 访问顺序，false 插入顺序
 */
 final boolean accessOrder;
-
 ```
 
 ### 10，Spring的事务传播和隔离级别有哪些？
@@ -160,19 +149,19 @@ final boolean accessOrder;
 
 ```java
 public enum Propagation {
-   
+
    REQUIRED(TransactionDefinition.PROPAGATION_REQUIRED),
-   
+
    SUPPORTS(TransactionDefinition.PROPAGATION_SUPPORTS),
-   
+
    MANDATORY(TransactionDefinition.PROPAGATION_MANDATORY),
-   
+
    REQUIRES_NEW(TransactionDefinition.PROPAGATION_REQUIRES_NEW),
-   
+
    NOT_SUPPORTED(TransactionDefinition.PROPAGATION_NOT_SUPPORTED),
-   
+
    NEVER(TransactionDefinition.PROPAGATION_NEVER),
-   
+
    NESTED(TransactionDefinition.PROPAGATION_NESTED);
 
    private final int value;
@@ -187,7 +176,7 @@ public enum Propagation {
 
 }
 
-// 进一步查看TransactionDefinition	
+// 进一步查看TransactionDefinition    
 int PROPAGATION_REQUIRED = 0;
 
 int PROPAGATION_SUPPORTS = 1;
@@ -406,67 +395,151 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 
 （1）Redis中的实现
 
-​	Server.h类中的zskiplist
+​    Server.h类中的zskiplist
 
 （2）JDK中的实现
 
-​	ConcurrentSkipListMap.java
+​    ConcurrentSkipListMap.java
+
+![](C:\Users\pc\AppData\Roaming\marktext\images\2022-04-12-22-45-21-image.png)
+
+![](C:\Users\pc\AppData\Roaming\marktext\images\2022-04-12-22-46-11-image.png)
 
 ### 19，dubbo的整体架构设计和分层
+
 #### （1）5个角色<br>
+
 * 注册中心registry：服务注册与发现<br>
+
 * 服务提供者provider：暴露服务<br>
+
 * 服务消费者consumer：调用远程服务<br>
+
 * 监控中心monitor：统计服务的调用次数和调用时间<br>
+
 * 窗口container：服务允许窗口<br>
-#### （2）调用流程<br>
+  
+  #### （2）调用流程<br>
+
 * container容器负责启动、加载、运行provider<br>
+
 * provider在启动时，向registry中心注册自己提供的服务<br>
+
 * consumer在启动时，向registry中心订阅自己所需的服务<br>
+
 * registry返回服务提供者列表给consumer，如果有变更，registry将基于长连接发送变更给consumer<br>
+
 * consumer调用provider服务，基于负载均衡算法进行调用<br>
+
 * consumer调用provider的统计，基于短连接定时每分钟一次统计到monitor<br>
-#### （3）分层<br>
+  
+  #### （3）分层<br>
+
 * 接口服务层（Service）：面向开发者、业务代码、接口、实现等<br>
+
 * 配置层（Config）：对外配置接口，以ServiceConfig与ReferenceConfig为中心<br>
+
 * 服务代理层（Proxy）：对生产者和消费者、dubbo都会产生一个代理类封装调用细节，业务层对调用细节无感<br>
+
 * 服务注册层（Registry）：封装服务地址的注册与发现，以服务URL为中心<br>
+
 * 路由层（Cluster）：封装多个提供者的路由和负载均衡，并桥接注册中心<br>
+
 * 监控层（Monitor）：RPC调用次数和调用时间监控<br>
+
 * 远程调用层（Protocal）：封装RPC调用<br>
+
 * 信息交换层（Exchange）：封装请求响应模式，同步转异步<br>
+
 * 网络传输层（Transport）：抽象mina和netty为统一接口，统一网络传输接口<br>
+
 * 数据序列化层（Serialize）：数据传输的序列化和反序列化<br>
 
 ### 20，ZAB协议与RAFT协议的区别
+
 #### （1）ZAB<br>
+
 * Leader 一个zookeeper集群同一时刻仅能有一个Leader。Leader负责接收所有的客户端的请求。<br>
 * Follower 提供读服务，参与选举。<br>
 * Observer 仅提供读服务。<br>
 
 #### （2）Raft<br>
+
 * Leader 负责接收所有的客户端的请求。<br>
 * Follower 读写请求都转发到Leader，参与选举。<br>
 * Candidate 每个节点上都有一个倒计时器 (Election Timeout)，时间随机在 150ms 到 300ms 之间。在一个节点倒计时结束 (Timeout) 后，这个节点的状态变成 Candidate 开始选举，它给其他几个节点发送选举请求 (RequestVote)。选举成功则变为Leader。<br>
 
 ### 21，缓存雪崩、缓存穿透、缓存击穿
+
 #### （1）缓存雪崩
-    	同一时间缓存大面积失效，导致后面的请求都会落到数据库上，造成数据库短时间内承受大量请求而崩掉
+
+同一时间缓存大面积失效，导致后面的请求都会落到数据库上，造成数据库短时间内承受大量请求而崩掉
+
 #### 解决方案
+
 * 缓存数据的过期时间设置随机，防止同一时间大量数据过期现象发生
 * 给每一个缓存数据增加相应的缓存标记，记录缓存是否失效，如果缓存标记失效，则更新数据的缓存
 * 缓存预热
 * 互斥锁
-    
+
 #### （2）缓存穿透
-        缓存和数据库中都没有的数据，导致所有的请求都落到数据库上，造成数据库短时间内承受大量请求而崩掉
+
+缓存和数据库中都没有的数据，导致所有的请求都落到数据库上，造成数据库短时间内承受大量请求而崩掉
+
 #### 解决方案：
+
 * 接口层增加校验，如用户鉴权校验，id做基础校验，id<=0的直接拦截
 * 从缓存取不到的数据，在数据库中也没有取到，这时也可以将key-value写为key-null，缓存有效时间可以设置短一点，比如30秒（设置太长会导致正常情况也没法使用）。这样可以防止攻击用户反复用同一个id暴力攻击
 * 采用布隆过滤器，将所有可能存在的数据哈希到一个足够大的bitmap中，一个一定不存在的数据会被这个bitmap拦截掉，从而避免了对底层存储系统的查询压力
-    
+
 #### （3）缓存击穿
-        缓存中没有，但数据库中有的数据（一般是缓存时间到期），这时并发用户特别多，同时读缓存没读到数据，又数据库取数据，引起数据库压力瞬间增大，造成过大压力。和缓存雪崩不同的是，缓存击穿指并发查同一条数据，缓存雪崩是不同数据都过期了，很多数据都查不到从而查数据库
+
+缓存中没有，但数据库中有的数据（一般是缓存时间到期），这时并发用户特别多，同时读缓存没读到数据，又数据库取数据，引起数据库压力瞬间增大，造成过大压力。和缓存雪崩不同的是，缓存击穿指并发查同一条数据，缓存雪崩是不同数据都过期了，很多数据都查不到从而查数据库
+
 #### 解决方案
+
 * 设置热点数据永远不过期
 * 互斥锁
+
+#### 22，JVM性能监控工具
+
+* jps
+  
+  ```
+  jps -l
+  ```
+
+* jstat
+  
+  ```
+  jstat -gc 2764 250 20
+  ```
+
+* jmap
+  
+  ```
+  jmap -heap 158
+  ```
+
+* jstack
+  
+  ```
+  jstack -l 3500
+  ```
+  
+  #### 23，主动调用gc的方法
+  
+  ```java
+  System.gc();
+  
+  // 源码
+  public static void gc() {
+    Runtime.getRuntime().gc();
+  }
+  ```
+  
+  #### 24，gitee开源许可证怎么选
+
+![](C:\Users\pc\AppData\Roaming\marktext\images\2022-04-12-23-18-51-image.png)
+
+参考：[代码开源如何选择开源许可证_JackieDYH的博客-CSDN博客_gitee开源许可证选哪个](https://blog.csdn.net/JackieDYH/article/details/105800230?utm_term=%E6%80%8E%E4%B9%88%E9%80%89%E6%8B%A9gitte%E7%9A%84%E5%BC%80%E6%BA%90%E8%AE%B8%E5%8F%AF%E8%AF%81&utm_medium=distribute.pc_aggpage_search_result.none-task-blog-2~all~sobaiduweb~default-1-105800230&spm=3001.4430)
