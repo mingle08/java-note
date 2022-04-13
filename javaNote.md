@@ -176,7 +176,7 @@ public enum Propagation {
 
 }
 
-// 进一步查看TransactionDefinition    
+// 查看org.springframework.transaction.TransactionDefinition   
 int PROPAGATION_REQUIRED = 0;
 
 int PROPAGATION_SUPPORTS = 1;
@@ -213,7 +213,7 @@ boolean isReadOnly();
 
 String getName();
 
-// 隔离级别，是用Connection接口中的常量赋值的，我们来看一下Connection类，这是java.sql包中的：Connection接口
+// 隔离级别，java.sql.Connection
 int TRANSACTION_NONE             = 0;
 
 int TRANSACTION_READ_UNCOMMITTED = 1;
@@ -393,17 +393,15 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 
 ### 18，跳跃表
 
-（1）Redis中的实现
+#### （1）Redis中的实现
 
 ​    Server.h类中的zskiplist
 
-（2）JDK中的实现
+#### （2）JDK中的实现
 
 ​    ConcurrentSkipListMap.java
 
-![](C:\Users\pc\AppData\Roaming\marktext\images\2022-04-12-22-45-21-image.png)
-
-![](C:\Users\pc\AppData\Roaming\marktext\images\2022-04-12-22-46-11-image.png)
+![](D:\abc\giteeCode\java-note\跳跃表.png)
 
 ### 19，dubbo的整体架构设计和分层
 
@@ -418,8 +416,8 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 * 监控中心monitor：统计服务的调用次数和调用时间<br>
 
 * 窗口container：服务允许窗口<br>
-  
-  #### （2）调用流程<br>
+
+#### （2）调用流程<br>
 
 * container容器负责启动、加载、运行provider<br>
 
@@ -432,8 +430,8 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 * consumer调用provider服务，基于负载均衡算法进行调用<br>
 
 * consumer调用provider的统计，基于短连接定时每分钟一次统计到monitor<br>
-  
-  #### （3）分层<br>
+
+#### （3）分层<br>
 
 * 接口服务层（Service）：面向开发者、业务代码、接口、实现等<br>
 
@@ -447,7 +445,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 
 * 监控层（Monitor）：RPC调用次数和调用时间监控<br>
 
-* 远程调用层（Protocal）：封装RPC调用<br>
+* 远程调用层（Protocol）：封装RPC调用<br>
 
 * 信息交换层（Exchange）：封装请求响应模式，同步转异步<br>
 
@@ -540,6 +538,6 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
   
   #### 24，gitee开源许可证怎么选
 
-![](C:\Users\pc\AppData\Roaming\marktext\images\2022-04-12-23-18-51-image.png)
+![](D:\abc\giteeCode\java-note\开源许可证.png)
 
 参考：[代码开源如何选择开源许可证_JackieDYH的博客-CSDN博客_gitee开源许可证选哪个](https://blog.csdn.net/JackieDYH/article/details/105800230?utm_term=%E6%80%8E%E4%B9%88%E9%80%89%E6%8B%A9gitte%E7%9A%84%E5%BC%80%E6%BA%90%E8%AE%B8%E5%8F%AF%E8%AF%81&utm_medium=distribute.pc_aggpage_search_result.none-task-blog-2~all~sobaiduweb~default-1-105800230&spm=3001.4430)
