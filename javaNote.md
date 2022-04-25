@@ -499,7 +499,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 * 设置热点数据永远不过期
 * 互斥锁
 
-#### 22，JVM性能监控工具
+### 22，JVM性能监控工具
 
 * jps
   
@@ -524,20 +524,115 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
   ```
   jstack -l 3500
   ```
-  
-  #### 23，主动调用gc的方法
-  
-  ```java
-  System.gc();
-  
-  // 源码
-  public static void gc() {
-    Runtime.getRuntime().gc();
-  }
-  ```
-  
-  #### 24，gitee开源许可证怎么选
+
+### 23，主动调用gc的方法
+
+```java
+System.gc();
+
+// 源码
+public static void gc() {
+  Runtime.getRuntime().gc();
+}
+```
+
+### 24，gitee开源许可证怎么选
 
 ![](D:\abc\giteeCode\java-note\开源许可证.png)
 
 参考：[代码开源如何选择开源许可证_JackieDYH的博客-CSDN博客_gitee开源许可证选哪个](https://blog.csdn.net/JackieDYH/article/details/105800230?utm_term=%E6%80%8E%E4%B9%88%E9%80%89%E6%8B%A9gitte%E7%9A%84%E5%BC%80%E6%BA%90%E8%AE%B8%E5%8F%AF%E8%AF%81&utm_medium=distribute.pc_aggpage_search_result.none-task-blog-2~all~sobaiduweb~default-1-105800230&spm=3001.4430)
+
+### 25，dubbo服务暴露和服务消费机制
+
+![](assets/2022-04-19-00-12-06-image.png)
+
+### 26，dubbo协议的魔数
+
+```java
+public class ExchangeCodec extends TelnetCodec {
+
+    // header length.
+    protected static final int HEADER_LENGTH = 16;
+    // magic header.
+    protected static final short MAGIC = (short) 0xdabb;
+    protected static final byte MAGIC_HIGH = Bytes.short2bytes(MAGIC)[0];
+    protected static final byte MAGIC_LOW = Bytes.short2bytes(MAGIC)[1];
+    // 省略其它代码
+}
+```
+
+### 27，dubbo protocol继承图
+
+![](assets/2022-04-19-00-54-16-image.png)
+
+### 28，dubbo服务暴露代码分析
+
+```java
+export()
+--> ServiceConfig.export()
+--> doExport()
+--> doExportUrls()
+--> loadRegistries(true)
+--> doExportFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs)
+--> exportLocal(URL url)
+--> proxyFactory.getInvoker(ref, (Class) interfaceClass, local)
+--> ExtensionLoader.getExtensionLoader(ProxyFactory.class).getExtension("javassist")
+--> extension.getInvoker(arg0, arg1, arg2)
+--> StubProxyFactoryWrapper.getInvoker(T proxy, Class<T> type, URL url)
+...
+```
+
+### 29，泛型
+
+1，ParameterizedType
+
+```
+Set<String> set;
+Class<Integer> clazz;
+MyClass<String> myClass;
+List<String> list;
+class MyClass<V>{
+
+}
+```
+
+2，TypeVariable
+
+```
+<T extends KnownType-1 & KnownType-2>
+
+public interface TypeVariable<D extends GenericDeclaration> extends Type {
+
+   //获得泛型的上限，若未明确声明上边界则默认为Object
+    Type[] getBounds();
+
+    //获取声明该类型变量实体(即获得类、方法或构造器名)
+    D getGenericDeclaration();
+
+    //获得名称，即K、V、E之类名称
+    String getName();
+
+    //获得注解类型的上限，若未明确声明上边界则默认为长度为0的数组
+    AnnotatedType[] getAnnotatedBounds()
+
+}
+```
+
+3，WildcardType
+
+```
+<? extends Number>
+```
+
+4，GenericArrayType
+
+```
+List<String>[] listArray; //是GenericArrayType,元素是List<String>类型，也就是ParameterizedType类型
+
+T[] tArray; //是GenericArrayType,元素是T类型，也就是TypeVariable类型
+
+
+Person[] persons; //不是GenericArrayType
+
+List<String> strings; //不是GenericArrayType
+```
