@@ -636,3 +636,247 @@ Person[] persons; //不是GenericArrayType
 
 List<String> strings; //不是GenericArrayType
 ```
+
+### 30，hotspot源码中的juint类型
+
+```cpp
+// globalDefinitions_visCPP.hpp
+
+// Additional Java basic types
+
+typedef unsigned char    jubyte;
+typedef unsigned short   jushort;
+typedef unsigned int     juint;
+typedef unsigned __int64 julong;
+```
+
+### 31，堆转储的转储是什么意思
+
+![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-04-30-19-17-42-image.png)
+
+### 32，Hotspot中定义的5种对象状态
+
+![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-04-30-19-36-45-image.png)
+
+### 33，JVM内部定义的类状态
+
+```cpp
+// hotspot/src/share/vm/oops/instanceKlass.hpp
+
+// See "The Java Virtual Machine Specification" section 2.16.2-5 for a detailed description
+// of the class loading & initialization procedure, and the use of the states.
+enum ClassState {
+  allocated,                          // allocated (but not yet linked)
+  loaded,                             // loaded and inserted in class hierarchy (but not linked yet)
+  linked,                             // successfully linked/verified (but not initialized yet)
+  being_initialized,                  // currently running class initializer
+  fully_initialized,                  // initialized (successfull final state)
+  initialization_error                // error happened during initialization
+};
+```
+
+### 34，spring源码编译，版本号：4.3.18
+
+* 命令：./gradlew :spring-oxm:compileTestJava  编译成功
+
+![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-01-13-27-01-image.png)
+
+* sync 成功
+
+![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-01-16-20-04-image.png)
+
+### 35，调试循环依赖
+
+（1）配置文件和依赖bean的准备
+
+![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-18-47-34-image.png)
+
+![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-18-48-16-image.png)
+
+Class B的内容类似A，这里省略。
+
+（2）开始调试，一直进入到refresh()方法 --> finishBeanFactoryInitialization --> preInstantiateSingletons()方法
+
+![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-18-46-33-image.png)
+
+可以看到，要实例化的beanNames有2个，就是我们想要的a和b。
+
+首先是处理a，重点关注bd即beanDefinition中的propertyValues，可以看到在propertyValuesList只有一个元素：属性b，name是b，value是一个RuntimeBeanReference对象，属性beanName为b。
+
+![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-19-00-49-image.png)
+
+这是在什么时候保存的？答案是在beanDefinition解析阶段，有一个处理步骤是解析property子元素：parsePropertyElements(ele, bd)，在此方法中，比如解析xml中的a的属性b，会把property标签中的ref="b"保存为RuntimeBeanReference，源码如下：
+
+```java
+public void parsePropertyElement(Element ele, BeanDefinition bd) {
+        String propertyName = ele.getAttribute(NAME_ATTRIBUTE);
+        if (!StringUtils.hasLength(propertyName)) {
+            error("Tag 'property' must have a 'name' attribute", ele);
+            return;
+        }
+        this.parseState.push(new PropertyEntry(propertyName));
+        try {
+            if (bd.getPropertyValues().contains(propertyName)) {
+                error("Multiple 'property' definitions for property '" + propertyName + "'", ele);
+                return;
+            }
+            Object val = parsePropertyValue(ele, bd, propertyName);
+            PropertyValue pv = new PropertyValue(propertyName, val);
+            parseMetaElements(ele, pv);
+            pv.setSource(extractSource(ele));
+            bd.getPropertyValues().addPropertyValue(pv);
+        }
+        finally {
+            this.parseState.pop();
+        }
+    }
+
+
+public Object parsePropertyValue(Element ele, BeanDefinition bd, String propertyName) {
+        String elementName = (propertyName != null) ?
+                        "<property> element for property '" + propertyName + "'" :
+                        "<constructor-arg> element";
+
+        // Should only have one child element: ref, value, list, etc.
+        NodeList nl = ele.getChildNodes();
+        Element subElement = null;
+        for (int i = 0; i < nl.getLength(); i++) {
+            Node node = nl.item(i);
+            if (node instanceof Element && !nodeNameEquals(node, DESCRIPTION_ELEMENT) &&
+                    !nodeNameEquals(node, META_ELEMENT)) {
+                // Child element is what we're looking for.
+                if (subElement != null) {
+                    error(elementName + " must not contain more than one sub-element", ele);
+                }
+                else {
+                    subElement = (Element) node;
+                }
+            }
+        }
+
+        boolean hasRefAttribute = ele.hasAttribute(REF_ATTRIBUTE);
+        boolean hasValueAttribute = ele.hasAttribute(VALUE_ATTRIBUTE);
+        if ((hasRefAttribute && hasValueAttribute) ||
+                ((hasRefAttribute || hasValueAttribute) && subElement != null)) {
+            error(elementName +
+                    " is only allowed to contain either 'ref' attribute OR 'value' attribute OR sub-element", ele);
+        }
+
+        /**
+         * <bean id="a" class="test.A>
+         *     <property> name="b" ref="b"/>
+         * </property></bean>
+         */
+        if (hasRefAttribute) {
+            // 获取到refName，比如是B
+            String refName = ele.getAttribute(REF_ATTRIBUTE);
+            if (!StringUtils.hasText(refName)) {
+                error(elementName + " contains empty 'ref' attribute", ele);
+            }
+            // 把refName封装成RuntimeBeanReference对象
+            RuntimeBeanReference ref = new RuntimeBeanReference(refName);
+            ref.setSource(extractSource(ele));
+            return ref;
+        }
+        else if (hasValueAttribute) {
+            TypedStringValue valueHolder = new TypedStringValue(ele.getAttribute(VALUE_ATTRIBUTE));
+            valueHolder.setSource(extractSource(ele));
+            return valueHolder;
+        }
+        else if (subElement != null) {
+            return parsePropertySubElement(subElement, bd);
+        }
+        else {
+            // Neither child element nor "ref" or "value" attribute found.
+            error(elementName + " must specify a ref or value", ele);
+            return null;
+        }
+    }
+```
+
+然后一路跟进populateBean方法，F7进入方法：
+
+![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-19-20-34-image.png)
+
+看到autowireMode的值是0，不会走这个if分支：
+
+![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-19-30-41-image.png)
+
+重点是applyPropertyValues方法，按F7进入，来到resolveValueIfNecessary方法。
+
+![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-19-38-45-image.png)
+
+进入valueResolver的resolveValueIfNecessary方法，来到第一个分支，进入resolveReference方法，发现依赖bean（此处是b）是在这里创建的，熟悉的beanFactory.getBean()方法。
+
+```java
+public Object resolveValueIfNecessary(Object argName, Object value) {
+        // We must check each value to see whether it requires a runtime reference
+        // to another bean to be resolved.
+        if (value instanceof RuntimeBeanReference) {
+            RuntimeBeanReference ref = (RuntimeBeanReference) value;
+            return resolveReference(argName, ref);
+        }
+        else if (value instanceof RuntimeBeanNameReference) {
+            String refName = ((RuntimeBeanNameReference) value).getBeanName();
+            refName = String.valueOf(doEvaluate(refName));
+            if (!this.beanFactory.containsBean(refName)) {
+                throw new BeanDefinitionStoreException(
+                        "Invalid bean name '" + refName + "' in bean reference for " + argName);
+            }
+            return refName;
+        }
+// 省略
+}
+
+// 创建bean
+private Object resolveReference(Object argName, RuntimeBeanReference ref) {
+        try {
+            String refName = ref.getBeanName();
+            refName = String.valueOf(doEvaluate(refName));
+            if (ref.isToParent()) {
+                if (this.beanFactory.getParentBeanFactory() == null) {
+                    throw new BeanCreationException(
+                            this.beanDefinition.getResourceDescription(), this.beanName,
+                            "Can't resolve reference to bean '" + refName +
+                            "' in parent factory: no parent factory available");
+                }
+                return this.beanFactory.getParentBeanFactory().getBean(refName);
+            }
+            else {
+                /**
+                 * populateBean时发现有依赖bean，则创建依赖bean
+                 */
+                Object bean = this.beanFactory.getBean(refName);
+                this.beanFactory.registerDependentBean(refName, this.beanName);
+                return bean;
+            }
+        }
+        catch (BeansException ex) {
+            throw new BeanCreationException(
+                    this.beanDefinition.getResourceDescription(), this.beanName,
+                    "Cannot resolve reference to bean '" + ref.getBeanName() + "' while setting " + argName, ex);
+        }
+    }
+```
+
+创建b，又会重新进入getBean, doGetBean, createBean, doCreateBean
+
+同样的，创建b时发现bd中propertyValues存放的a的value也是RuntimeBeanReference类型。
+
+![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-20-55-20-image.png)
+
+创建完成之后，a中有b，b中有a，循环往复：
+
+![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-21-16-36-image.png)
+
+一直按F8之后，回到这里：
+
+![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-21-22-39-image.png)
+
+因为以上所有的操作，都是这个循环开始处理beanName为a的情况，处理完之后回到这里，开始处理beanName为b的情况。
+
+![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-21-24-45-image.png)
+
+完成之后，可以看到缓存的情况：
+
+![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-21-29-09-image.png)
