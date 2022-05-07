@@ -880,3 +880,97 @@ private Object resolveReference(Object argName, RuntimeBeanReference ref) {
 完成之后，可以看到缓存的情况：
 
 ![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-21-29-09-image.png)
+
+### 36，mybatis调试sql
+
+```java
+// 一路F7，进入CachingExecutor类
+public <E> List<E> query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
+  BoundSql boundSql = ms.getBoundSql(parameterObject);
+  CacheKey key = createCacheKey(ms, parameterObject, rowBounds, boundSql);
+  return query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
+}
+// MappedStatement类
+public BoundSql getBoundSql(Object parameterObject) {
+  BoundSql boundSql = sqlSource.getBoundSql(parameterObject);
+  List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
+  if (parameterMappings == null || parameterMappings.size() <= 0) {
+    boundSql = new BoundSql(configuration, boundSql.getSql(), parameterMap.getParameterMappings(), parameterObject);
+  }
+
+  // check for nested result maps in parameter mappings (issue #30)
+  for (ParameterMapping pm : boundSql.getParameterMappings()) {
+    String rmId = pm.getResultMapId();
+    if (rmId != null) {
+      ResultMap rm = configuration.getResultMap(rmId);
+      if (rm != null) {
+        hasNestedResultMaps |= rm.hasNestedResultMaps();
+      }
+    }
+  }
+
+  return boundSql;
+}
+
+// 进入getBoundSql方法，来到DynamicSqlSource类
+public BoundSql getBoundSql(Object parameterObject) {
+  DynamicContext context = new DynamicContext(configuration, parameterObject);
+  rootSqlNode.apply(context);
+  SqlSourceBuilder sqlSourceParser = new SqlSourceBuilder(configuration);
+  Class<?> parameterType = parameterObject == null ? Object.class : parameterObject.getClass();
+  SqlSource sqlSource = sqlSourceParser.parse(context.getSql(), parameterType, context.getBindings());
+  BoundSql boundSql = sqlSource.getBoundSql(parameterObject);
+  for (Map.Entry<String, Object> entry : context.getBindings().entrySet()) {
+    boundSql.setAdditionalParameter(entry.getKey(), entry.getValue());
+  }
+  return boundSql;
+}
+```
+
+![](D:\abc\giteeCode\java-note\2022-05-07-17-44-59-image.png)
+
+![](D:\abc\giteeCode\java-note\2022-05-07-15-57-50-image.png)
+
+```java
+// 进入rootSqlNode.apply方法,来到MixedSqlNode
+public class MixedSqlNode implements SqlNode {
+  private List<SqlNode> contents;
+
+  public MixedSqlNode(List<SqlNode> contents) {
+    this.contents = contents;
+  }
+
+  public boolean apply(DynamicContext context) {
+    for (SqlNode sqlNode : contents) {
+      sqlNode.apply(context);
+    }
+    return true;
+  }
+}
+
+// 进入apply方法，来到TextSqlNode类
+public boolean apply(DynamicContext context) {
+  GenericTokenParser parser = createParser(new BindingTokenParser(context));
+  context.appendSql(parser.parse(text));
+  return true;
+}
+
+private GenericTokenParser createParser(TokenHandler handler) {
+  return new GenericTokenParser("${", "}", handler);
+}
+
+// 进入apply方法，来到StaticTextSqlNode类
+public class StaticTextSqlNode implements SqlNode {
+  private String text;
+
+  public StaticTextSqlNode(String text) {
+    this.text = text;
+  }
+
+  public boolean apply(DynamicContext context) {
+    context.appendSql(text);
+    return true;
+  }
+
+}
+```
