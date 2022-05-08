@@ -299,8 +299,6 @@ private void createRowKeyForMappedProperties(ResultMap resultMap, ResultSetWrapp
 }
 ```
 
-
-
 ### 38，@Resource注解是在哪儿解析的
 
 ```java
@@ -445,97 +443,97 @@ private class ResourceElement extends LookupElement {
 
 对比@Autowired注解的解析：AutowiredAnnotationBeanPostProcessor
 
-Spring在实例化Bean时检查@Autowired注解，有2处检查点：
+Spring处理@Autowired注解，有2处：
 
-（1）postProcessMergedBeanDefinition方法
+（1）postProcessMergedBeanDefinition方法：预处理，缓存属性或方法
 
-（2）populateBean方法
+（2）populateBean方法：注入属性或方法
 
 ```java
 // AutowiredAnnotationBeanPostProcessor
 public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBeanPostProcessorAdapter
-		implements MergedBeanDefinitionPostProcessor, PriorityOrdered, BeanFactoryAware {
+        implements MergedBeanDefinitionPostProcessor, PriorityOrdered, BeanFactoryAware {
 
-	protected final Log logger = LogFactory.getLog(getClass());
+    protected final Log logger = LogFactory.getLog(getClass());
 
-	private final Set<Class<? extends Annotation>> autowiredAnnotationTypes =
-			new LinkedHashSet<Class<? extends Annotation>>();
+    private final Set<Class<? extends Annotation>> autowiredAnnotationTypes =
+            new LinkedHashSet<Class<? extends Annotation>>();
 
-	private String requiredParameterName = "required";
+    private String requiredParameterName = "required";
 
-	private boolean requiredParameterValue = true;
+    private boolean requiredParameterValue = true;
 
-	private int order = Ordered.LOWEST_PRECEDENCE - 2;
+    private int order = Ordered.LOWEST_PRECEDENCE - 2;
 
-	private ConfigurableListableBeanFactory beanFactory;
+    private ConfigurableListableBeanFactory beanFactory;
 
-	private final Set<String> lookupMethodsChecked =
-			Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>(256));
+    private final Set<String> lookupMethodsChecked =
+            Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>(256));
 
-	private final Map<Class<?>, Constructor<?>[]> candidateConstructorsCache =
-			new ConcurrentHashMap<Class<?>, Constructor<?>[]>(256);
+    private final Map<Class<?>, Constructor<?>[]> candidateConstructorsCache =
+            new ConcurrentHashMap<Class<?>, Constructor<?>[]>(256);
 
-	private final Map<String, InjectionMetadata> injectionMetadataCache =
-			new ConcurrentHashMap<String, InjectionMetadata>(256);
+    private final Map<String, InjectionMetadata> injectionMetadataCache =
+            new ConcurrentHashMap<String, InjectionMetadata>(256);
 
 
-	/**
-	 * Create a new AutowiredAnnotationBeanPostProcessor
-	 * for Spring's standard {@link Autowired} annotation.
-	 * <p>Also supports JSR-330's {@link javax.inject.Inject} annotation, if available.
-	 */
-	@SuppressWarnings("unchecked")
-	public AutowiredAnnotationBeanPostProcessor() {
+    /**
+     * Create a new AutowiredAnnotationBeanPostProcessor
+     * for Spring's standard {@link Autowired} annotation.
+     * <p>Also supports JSR-330's {@link javax.inject.Inject} annotation, if available.
+     */
+    @SuppressWarnings("unchecked")
+    public AutowiredAnnotationBeanPostProcessor() {
         // @Autowired
-		this.autowiredAnnotationTypes.add(Autowired.class);
+        this.autowiredAnnotationTypes.add(Autowired.class);
         // @Value
-		this.autowiredAnnotationTypes.add(Value.class);
-		try {
-			this.autowiredAnnotationTypes.add((Class<? extends Annotation>)
-					ClassUtils.forName("javax.inject.Inject", AutowiredAnnotationBeanPostProcessor.class.getClassLoader()));
-			logger.info("JSR-330 'javax.inject.Inject' annotation found and supported for autowiring");
-		}
-		catch (ClassNotFoundException ex) {
-			// JSR-330 API not available - simply skip.
-		}
-	}
+        this.autowiredAnnotationTypes.add(Value.class);
+        try {
+            this.autowiredAnnotationTypes.add((Class<? extends Annotation>)
+                    ClassUtils.forName("javax.inject.Inject", AutowiredAnnotationBeanPostProcessor.class.getClassLoader()));
+            logger.info("JSR-330 'javax.inject.Inject' annotation found and supported for autowiring");
+        }
+        catch (ClassNotFoundException ex) {
+            // JSR-330 API not available - simply skip.
+        }
+    }
 
     /*
       doCreateBean方法中的方法applyMergedBeanDefinitionPostProcessors：
       protected void applyMergedBeanDefinitionPostProcessors(RootBeanDefinition mbd, Class<?> beanType, String beanName) {
-		for (BeanPostProcessor bp : getBeanPostProcessors()) {
-			if (bp instanceof MergedBeanDefinitionPostProcessor) {
-				MergedBeanDefinitionPostProcessor bdp = (MergedBeanDefinitionPostProcessor) bp;
-				bdp.postProcessMergedBeanDefinition(mbd, beanType, beanName);
-			}
-		}
-	}
+        for (BeanPostProcessor bp : getBeanPostProcessors()) {
+            if (bp instanceof MergedBeanDefinitionPostProcessor) {
+                MergedBeanDefinitionPostProcessor bdp = (MergedBeanDefinitionPostProcessor) bp;
+                bdp.postProcessMergedBeanDefinition(mbd, beanType, beanName);
+            }
+        }
+    }
     */
     @Override
-	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
-		if (beanType != null) {
-			InjectionMetadata metadata = findAutowiringMetadata(beanName, beanType, null);
-			metadata.checkConfigMembers(beanDefinition);
-		}
-	}
+    public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
+        if (beanType != null) {
+            InjectionMetadata metadata = findAutowiringMetadata(beanName, beanType, null);
+            metadata.checkConfigMembers(beanDefinition);
+        }
+    }
 
     // populateBean方法中遍历BeanPostProcessors来调用此方法
     @Override
-	public PropertyValues postProcessPropertyValues(
-			PropertyValues pvs, PropertyDescriptor[] pds, Object bean, String beanName) throws BeanCreationException {
+    public PropertyValues postProcessPropertyValues(
+            PropertyValues pvs, PropertyDescriptor[] pds, Object bean, String beanName) throws BeanCreationException {
 
-		InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
-		try {
-			metadata.inject(bean, beanName, pvs);
-		}
-		catch (BeanCreationException ex) {
-			throw ex;
-		}
-		catch (Throwable ex) {
-			throw new BeanCreationException(beanName, "Injection of autowired dependencies failed", ex);
-		}
-		return pvs;
-	}
+        InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
+        try {
+            metadata.inject(bean, beanName, pvs);
+        }
+        catch (BeanCreationException ex) {
+            throw ex;
+        }
+        catch (Throwable ex) {
+            throw new BeanCreationException(beanName, "Injection of autowired dependencies failed", ex);
+        }
+        return pvs;
+    }
     // 省略
 }
 ```
