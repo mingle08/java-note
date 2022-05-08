@@ -298,3 +298,248 @@ private void createRowKeyForMappedProperties(ResultMap resultMap, ResultSetWrapp
     }
 }
 ```
+
+
+
+### 38，@Resource注解是在哪儿解析的
+
+```java
+// CommonAnnotationBeanPostProcessor.java
+private InjectionMetadata buildResourceMetadata(final Class<?> clazz) {
+    LinkedList<InjectionMetadata.InjectedElement> elements = new LinkedList<InjectionMetadata.InjectedElement>();
+    Class<?> targetClass = clazz;
+
+    do {
+        final LinkedList<InjectionMetadata.InjectedElement> currElements =
+                new LinkedList<InjectionMetadata.InjectedElement>();
+
+        // 先处理属性上的注解
+        ReflectionUtils.doWithLocalFields(targetClass, new ReflectionUtils.FieldCallback() {
+            @Override
+            public void doWith(Field field) throws IllegalArgumentException, IllegalAccessException {
+                if (webServiceRefClass != null && field.isAnnotationPresent(webServiceRefClass)) {
+                    if (Modifier.isStatic(field.getModifiers())) {
+                        throw new IllegalStateException("@WebServiceRef annotation is not supported on static fields");
+                    }
+                    currElements.add(new WebServiceRefElement(field, field, null));
+                }
+                else if (ejbRefClass != null && field.isAnnotationPresent(ejbRefClass)) {
+                    if (Modifier.isStatic(field.getModifiers())) {
+                        throw new IllegalStateException("@EJB annotation is not supported on static fields");
+                    }
+                    currElements.add(new EjbRefElement(field, field, null));
+                }
+                /*
+                    属性上的@Resource注解，如果存在则生成一个ResourceElement对象，加入List
+                    */
+                else if (field.isAnnotationPresent(Resource.class)) {
+                    if (Modifier.isStatic(field.getModifiers())) {
+                        throw new IllegalStateException("@Resource annotation is not supported on static fields");
+                    }
+                    if (!ignoredResourceTypes.contains(field.getType().getName())) {
+                        currElements.add(new ResourceElement(field, field, null));
+                    }
+                }
+            }
+        });
+
+        // 再处理方法上的注解
+        ReflectionUtils.doWithLocalMethods(targetClass, new ReflectionUtils.MethodCallback() {
+            @Override
+            public void doWith(Method method) throws IllegalArgumentException, IllegalAccessException {
+                Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
+                if (!BridgeMethodResolver.isVisibilityBridgeMethodPair(method, bridgedMethod)) {
+                    return;
+                }
+                if (method.equals(ClassUtils.getMostSpecificMethod(method, clazz))) {
+                    if (webServiceRefClass != null && bridgedMethod.isAnnotationPresent(webServiceRefClass)) {
+                        if (Modifier.isStatic(method.getModifiers())) {
+                            throw new IllegalStateException("@WebServiceRef annotation is not supported on static methods");
+                        }
+                        if (method.getParameterTypes().length != 1) {
+                            throw new IllegalStateException("@WebServiceRef annotation requires a single-arg method: " + method);
+                        }
+                        PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
+                        currElements.add(new WebServiceRefElement(method, bridgedMethod, pd));
+                    }
+                    else if (ejbRefClass != null && bridgedMethod.isAnnotationPresent(ejbRefClass)) {
+                        if (Modifier.isStatic(method.getModifiers())) {
+                            throw new IllegalStateException("@EJB annotation is not supported on static methods");
+                        }
+                        if (method.getParameterTypes().length != 1) {
+                            throw new IllegalStateException("@EJB annotation requires a single-arg method: " + method);
+                        }
+                        PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
+                        currElements.add(new EjbRefElement(method, bridgedMethod, pd));
+                    }
+                    // 方法上的@Resource，如果存在，生成一个ResourceElement对象，加入List
+                    else if (bridgedMethod.isAnnotationPresent(Resource.class)) {
+                        if (Modifier.isStatic(method.getModifiers())) {
+                            throw new IllegalStateException("@Resource annotation is not supported on static methods");
+                        }
+                        Class<?>[] paramTypes = method.getParameterTypes();
+                        if (paramTypes.length != 1) {
+                            throw new IllegalStateException("@Resource annotation requires a single-arg method: " + method);
+                        }
+                        if (!ignoredResourceTypes.contains(paramTypes[0].getName())) {
+                            PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
+                            currElements.add(new ResourceElement(method, bridgedMethod, pd));
+                        }
+                    }
+                }
+            }
+        });
+
+        elements.addAll(0, currElements);
+        targetClass = targetClass.getSuperclass();
+    }
+    while (targetClass != null && targetClass != Object.class);
+
+    return new InjectionMetadata(clazz, elements);
+}
+
+// 内部类
+private class ResourceElement extends LookupElement {
+
+    private final boolean lazyLookup;
+
+    public ResourceElement(Member member, AnnotatedElement ae, PropertyDescriptor pd) {
+        super(member, pd);
+        // 获取注解 @Resource并解析
+        Resource resource = ae.getAnnotation(Resource.class);
+        String resourceName = resource.name();
+        Class<?> resourceType = resource.type();
+        this.isDefaultName = !StringUtils.hasLength(resourceName);
+        if (this.isDefaultName) {
+            resourceName = this.member.getName();
+            if (this.member instanceof Method && resourceName.startsWith("set") && resourceName.length() > 3) {
+                resourceName = Introspector.decapitalize(resourceName.substring(3));
+            }
+        }
+        else if (embeddedValueResolver != null) {
+            resourceName = embeddedValueResolver.resolveStringValue(resourceName);
+        }
+        if (resourceType != null && Object.class != resourceType) {
+            checkResourceType(resourceType);
+        }
+        else {
+            // No resource type specified... check field/method.
+            resourceType = getResourceType();
+        }
+        this.name = resourceName;
+        this.lookupType = resourceType;
+        String lookupValue = (lookupAttribute != null ?
+                (String) ReflectionUtils.invokeMethod(lookupAttribute, resource) : null);
+        this.mappedName = (StringUtils.hasLength(lookupValue) ? lookupValue : resource.mappedName());
+        Lazy lazy = ae.getAnnotation(Lazy.class);
+        this.lazyLookup = (lazy != null && lazy.value());
+    }
+
+    @Override
+    protected Object getResourceToInject(Object target, String requestingBeanName) {
+        return (this.lazyLookup ? buildLazyResourceProxy(this, requestingBeanName) :
+                getResource(this, requestingBeanName));
+    }
+}
+```
+
+对比@Autowired注解的解析：AutowiredAnnotationBeanPostProcessor
+
+Spring在实例化Bean时检查@Autowired注解，有2处检查点：
+
+（1）postProcessMergedBeanDefinition方法
+
+（2）populateBean方法
+
+```java
+// AutowiredAnnotationBeanPostProcessor
+public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBeanPostProcessorAdapter
+		implements MergedBeanDefinitionPostProcessor, PriorityOrdered, BeanFactoryAware {
+
+	protected final Log logger = LogFactory.getLog(getClass());
+
+	private final Set<Class<? extends Annotation>> autowiredAnnotationTypes =
+			new LinkedHashSet<Class<? extends Annotation>>();
+
+	private String requiredParameterName = "required";
+
+	private boolean requiredParameterValue = true;
+
+	private int order = Ordered.LOWEST_PRECEDENCE - 2;
+
+	private ConfigurableListableBeanFactory beanFactory;
+
+	private final Set<String> lookupMethodsChecked =
+			Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>(256));
+
+	private final Map<Class<?>, Constructor<?>[]> candidateConstructorsCache =
+			new ConcurrentHashMap<Class<?>, Constructor<?>[]>(256);
+
+	private final Map<String, InjectionMetadata> injectionMetadataCache =
+			new ConcurrentHashMap<String, InjectionMetadata>(256);
+
+
+	/**
+	 * Create a new AutowiredAnnotationBeanPostProcessor
+	 * for Spring's standard {@link Autowired} annotation.
+	 * <p>Also supports JSR-330's {@link javax.inject.Inject} annotation, if available.
+	 */
+	@SuppressWarnings("unchecked")
+	public AutowiredAnnotationBeanPostProcessor() {
+        // @Autowired
+		this.autowiredAnnotationTypes.add(Autowired.class);
+        // @Value
+		this.autowiredAnnotationTypes.add(Value.class);
+		try {
+			this.autowiredAnnotationTypes.add((Class<? extends Annotation>)
+					ClassUtils.forName("javax.inject.Inject", AutowiredAnnotationBeanPostProcessor.class.getClassLoader()));
+			logger.info("JSR-330 'javax.inject.Inject' annotation found and supported for autowiring");
+		}
+		catch (ClassNotFoundException ex) {
+			// JSR-330 API not available - simply skip.
+		}
+	}
+
+    /*
+      doCreateBean方法中的方法applyMergedBeanDefinitionPostProcessors：
+      protected void applyMergedBeanDefinitionPostProcessors(RootBeanDefinition mbd, Class<?> beanType, String beanName) {
+		for (BeanPostProcessor bp : getBeanPostProcessors()) {
+			if (bp instanceof MergedBeanDefinitionPostProcessor) {
+				MergedBeanDefinitionPostProcessor bdp = (MergedBeanDefinitionPostProcessor) bp;
+				bdp.postProcessMergedBeanDefinition(mbd, beanType, beanName);
+			}
+		}
+	}
+    */
+    @Override
+	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
+		if (beanType != null) {
+			InjectionMetadata metadata = findAutowiringMetadata(beanName, beanType, null);
+			metadata.checkConfigMembers(beanDefinition);
+		}
+	}
+
+    // populateBean方法中遍历BeanPostProcessors来调用此方法
+    @Override
+	public PropertyValues postProcessPropertyValues(
+			PropertyValues pvs, PropertyDescriptor[] pds, Object bean, String beanName) throws BeanCreationException {
+
+		InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
+		try {
+			metadata.inject(bean, beanName, pvs);
+		}
+		catch (BeanCreationException ex) {
+			throw ex;
+		}
+		catch (Throwable ex) {
+			throw new BeanCreationException(beanName, "Injection of autowired dependencies failed", ex);
+		}
+		return pvs;
+	}
+    // 省略
+}
+```
+
+看一下PostProcessor的调用关系：
+
+![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-09-00-32-39-image.png)
