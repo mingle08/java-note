@@ -927,7 +927,7 @@ public BoundSql getBoundSql(Object parameterObject) {
 }
 ```
 
-![](D:\abc\giteeCode\java-note\2022-05-07-17-44-59-image.png)
+![](D:\abc\giteeCode\java-note\MixedSqlSource.png)
 
 ![](D:\abc\giteeCode\java-note\2022-05-07-15-57-50-image.png)
 

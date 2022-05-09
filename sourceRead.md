@@ -2,15 +2,15 @@
 
 contents中是把mybatis中的sql解析成11个片段。执行完apply方法之后，context中的sqlBuilder的value如下：${}已经被解析，而#{}还没有解析。
 
-![](D:\abc\giteeCode\java-note\2022-05-07-16-15-32-image.png)
+![](D:\abc\giteeCode\java-note\$符被替换.png)
 
 ${}符号在哪儿被替换的？是在IfSqlNode中替换的：
 
-![](D:\abc\giteeCode\java-note\2022-05-07-18-30-17-image.png)
+![](D:\abc\giteeCode\java-note\IfSqlNode.png)
 
 按F7跳转到TextSqlNode，在GenericTokenParser中完成替换。
 
-![](D:\abc\giteeCode\java-note\2022-05-07-18-32-00-image.png)
+![](D:\abc\giteeCode\java-note\TextSqlNode.png)
 
 ```java
 // 进入parse方法，来到SqlSourceBuilder类
@@ -22,11 +22,32 @@ public SqlSource parse(String originalSql, Class<?> parameterType, Map<String, O
 }
 ```
 
-![](D:\abc\giteeCode\java-note\2022-05-07-16-23-17-image.png)
+![](D:\abc\giteeCode\java-note\%23符被替换.png)
 
-解析之后，#{}变成了问号。进入下一行的getBoundSql方法：
+解析之后，#{}变成了问号。进入下一行的sqlSource.getBoundSql方法：
 
-![](D:\abc\giteeCode\java-note\2022-05-07-16-26-05-image.png)
+```java
+// DynamicSqlSource.java
+public BoundSql getBoundSql(Object parameterObject) {
+    DynamicContext context = new DynamicContext(configuration, parameterObject);
+    rootSqlNode.apply(context);
+    SqlSourceBuilder sqlSourceParser = new SqlSourceBuilder(configuration);
+    Class<?> parameterType = parameterObject == null ? Object.class : parameterObject.getClass();
+    SqlSource sqlSource = sqlSourceParser.parse(context.getSql(), parameterType, context.getBindings());
+    BoundSql boundSql = sqlSource.getBoundSql(parameterObject);
+    for (Map.Entry<String, Object> entry : context.getBindings().entrySet()) {
+        boundSql.setAdditionalParameter(entry.getKey(), entry.getValue());
+    }
+    return boundSql;
+}
+
+// 来到StaticSqlSource.java
+public BoundSql getBoundSql(Object parameterObject) {
+    return new BoundSql(configuration, sql, parameterMappings, parameterObject);
+}
+```
+
+![](D:\abc\giteeCode\java-note\StaticSqlSource.png)
 
 ```java
 // 最后来到BaseExecutor
@@ -61,11 +82,11 @@ public <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBoun
 }
 ```
 
-![](D:\abc\giteeCode\java-note\2022-05-07-16-36-24-image.png)
+![](D:\abc\giteeCode\java-note\SimpleExecutor.png)
 
 最终走到PreparedStatementHandler类
 
-![](D:\abc\giteeCode\java-note\2022-05-07-16-37-22-image.png)
+![](D:\abc\giteeCode\java-note\PreparedStatementHandler.png)
 
 ### 37，resultMap对于联合主键怎么写
 
@@ -541,3 +562,27 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 看一下PostProcessor的调用关系：
 
 ![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-09-00-32-39-image.png)
+
+```java
+// CommonAnnotationBeanPostProcessor.java的部分注释
+/**
+org.springframework.beans.factory.config.BeanPostProcessor implementation 
+that supports common Java annotations out of the box, in particular the 
+JSR-250 annotations in the javax.annotation package. These common Java 
+annotations are supported in many Java EE 5 technologies (e.g. JSF 1.2), 
+as well as in Java 6's JAX-WS.
+
+This post-processor includes support for the PostConstruct and PreDestroy 
+annotations - as init annotation and destroy annotation, respectively - 
+through inheriting from InitDestroyAnnotationBeanPostProcessor with 
+pre-configured annotation types.
+
+The central element is the Resource annotation for annotation-driven injection
+of named beans, by default from the containing Spring BeanFactory, with only 
+mappedName references resolved in JNDI. The "alwaysUseJndiLookup" flag enforces
+JNDI lookups equivalent to standard Java EE 5 resource injection for name 
+references and default names as well. The target beans can be simple POJOs, 
+with no special requirements other than the type having to match.
+
+*/
+```
