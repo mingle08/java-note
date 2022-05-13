@@ -1072,6 +1072,49 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
 * 准备创建bean
   
+  ```java
+  protected Object createBean(String beanName, RootBeanDefinition mbd, Object[] args) throws BeanCreationException {
+      if (this.logger.isDebugEnabled()) {
+          this.logger.debug("Creating instance of bean '" + beanName + "'");
+      }
+  
+      RootBeanDefinition mbdToUse = mbd;
+      Class<?> resolvedClass = this.resolveBeanClass(mbd, beanName, new Class[0]);
+      if (resolvedClass != null && !mbd.hasBeanClass() && mbd.getBeanClassName() != null) {
+          mbdToUse = new RootBeanDefinition(mbd);
+          mbdToUse.setBeanClass(resolvedClass);
+      }
+  
+      try {
+          // 1，处理override属性
+          mbdToUse.prepareMethodOverrides();
+      } catch (BeanDefinitionValidationException var7) {
+          throw new BeanDefinitionStoreException(mbdToUse.getResourceDescription(), beanName, "Validation of method overrides failed", var7);
+      }
+  
+      Object beanInstance;
+      try {
+          // 2，实例化的前置处理
+          beanInstance = this.resolveBeforeInstantiation(beanName, mbdToUse);
+          if (beanInstance != null) {
+              return beanInstance;
+          }
+      } catch (Throwable var8) {
+          throw new BeanCreationException(mbdToUse.getResourceDescription(), beanName, "BeanPostProcessor before instantiation of bean failed", var8);
+      }
+  
+      // 3，创建bean
+      beanInstance = this.doCreateBean(beanName, mbdToUse, args);
+      if (this.logger.isDebugEnabled()) {
+          this.logger.debug("Finished creating instance of bean '" + beanName + "'");
+      }
+  
+      return beanInstance;
+  }
+  ```
+  
+  
+  
   （1）处理override属性
   
   ```java
@@ -1086,84 +1129,153 @@ public class HashMap<K,V> extends AbstractMap<K,V>
   if (bean != null) {
       return bean;
   }
-  ```
   
+  // 
   protected Object resolveBeforeInstantiation(String beanName, RootBeanDefinition mbd) {
-  
       Object bean = null;
       if (!Boolean.FALSE.equals(mbd.beforeInstantiationResolved)) {
-          // Make sure bean class is actually resolved at this point.
-          if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
-              Class<?> targetType = determineTargetType(beanName, mbd);
+          if (!mbd.isSynthetic() && this.hasInstantiationAwareBeanPostProcessors()) {
+              Class<?> targetType = this.determineTargetType(beanName, mbd);
               if (targetType != null) {
-                  bean = applyBeanPostProcessorsBeforeInstantiation(targetType, beanName);
+                  bean = this.applyBeanPostProcessorsBeforeInstantiation(targetType, beanName);
                   if (bean != null) {
-                      bean = applyBeanPostProcessorsAfterInitialization(bean, beanName);
+                      bean = this.applyBeanPostProcessorsAfterInitialization(bean, beanName);
                   }
               }
           }
-          mbd.beforeInstantiationResolved = (bean != null);
-      }
-      return bean;
   
+          mbd.beforeInstantiationResolved = bean != null;
+      }
+  
+      return bean;
   }
+  ```
 
-```
-// 创建实例
+* 创建bean
 
 ```java
 // AbstractAutowireCapableBeanFactory.doCreateBean
-protected Object doCreateBean(String beanName, RootBeanDefinition mbd, @Nullable Object[] args) throws BeanCreationException {
-      BeanWrapper instanceWrapper = null;
-      if (mbd.isSingleton()) {
-          instanceWrapper = (BeanWrapper)this.factoryBeanInstanceCache.remove(beanName);
-      }
+protected Object doCreateBean(final String beanName, final RootBeanDefinition mbd, Object[] args) throws BeanCreationException {
+    BeanWrapper instanceWrapper = null;
+    // 1，如果是单例，则需要清除缓存
+    if (mbd.isSingleton()) {
+        instanceWrapper = (BeanWrapper)this.factoryBeanInstanceCache.remove(beanName);
+    }
+    // 2，实例化bean，将beanDefinition转换为BeanWrapper
+    if (instanceWrapper == null) {
+        instanceWrapper = this.createBeanInstance(beanName, mbd, args);
+    }
 
-      if (instanceWrapper == null) {
-          instanceWrapper = this.createBeanInstance(beanName, mbd, args);
-      }
+    final Object bean = instanceWrapper != null ? instanceWrapper.getWrappedInstance() : null;
+    Class<?> beanType = instanceWrapper != null ? instanceWrapper.getWrappedClass() : null;
+    mbd.resolvedTargetType = beanType;
+    synchronized(mbd.postProcessingLock) {
+        if (!mbd.postProcessed) {
+            try {
+                // 3，bean合并后的处理，预解析Autowired注解
+                this.applyMergedBeanDefinitionPostProcessors(mbd, beanType, beanName);
+            } catch (Throwable var17) {
+                throw new BeanCreationException(mbd.getResourceDescription(), beanName, "Post-processing of merged bean definition failed", var17);
+            }
 
-      Object bean = instanceWrapper.getWrappedInstance();
-      Class<?> beanType = instanceWrapper.getWrappedClass();
-      if (beanType != NullBean.class) {
-          mbd.resolvedTargetType = beanType;
-      }
+            mbd.postProcessed = true;
+        }
+    }
+    // 4，是否需要提早曝光：单例 & 允许循环依赖 & 当前bean正在创建中，检测循环依赖
+    boolean earlySingletonExposure = mbd.isSingleton() && this.allowCircularReferences && this.isSingletonCurrentlyInCreation(beanName);
+    if (earlySingletonExposure) {
+        if (this.logger.isDebugEnabled()) {
+            this.logger.debug("Eagerly caching bean '" + beanName + "' to allow for resolving potential circular references");
+        }
 
-      synchronized(mbd.postProcessingLock) {
-          // 省略代码
-      }
+        this.addSingletonFactory(beanName, new ObjectFactory<Object>() {
+            public Object getObject() throws BeansException {
+                // AOP就是在这里将advice动态织入bean中
+                return this.getEarlyBeanReference(beanName, mbd, bean);
+            }
+        });
+    }
+
+    Object exposedObject = bean;
+    try {
+        // 5，填充属性
+        this.populateBean(beanName, mbd, instanceWrapper);
+        if (exposedObject != null) {
+            // 调用初始化方法，先执行afterPropertiesSet，后执行init-method
+            exposedObject = this.initializeBean(beanName, exposedObject, mbd);
+        }
+    } catch (Throwable var18) {
+        if (var18 instanceof BeanCreationException && beanName.equals(((BeanCreationException)var18).getBeanName())) {
+            throw (BeanCreationException)var18;
+        }
+
+        throw new BeanCreationException(mbd.getResourceDescription(), beanName, "Initialization of bean failed", var18);
+    }
+    // 6，循环依赖检查
+    if (earlySingletonExposure) {
+        Object earlySingletonReference = this.getSingleton(beanName, false);
+        if (earlySingletonReference != null) {
+            if (exposedObject == bean) {
+                exposedObject = earlySingletonReference;
+            } else if (!this.allowRawInjectionDespiteWrapping && this.hasDependentBean(beanName)) {
+                String[] dependentBeans = this.getDependentBeans(beanName);
+                Set<String> actualDependentBeans = new LinkedHashSet(dependentBeans.length);
+                String[] var12 = dependentBeans;
+                int var13 = dependentBeans.length;
+
+                for(int var14 = 0; var14 < var13; ++var14) {
+                    String dependentBean = var12[var14];
+                    if (!this.removeSingletonIfCreatedForTypeCheckOnly(dependentBean)) {
+                        actualDependentBeans.add(dependentBean);
+                    }
+                }
+
+                if (!actualDependentBeans.isEmpty()) {
+                    throw new BeanCurrentlyInCreationException(beanName, "Bean with name '" + beanName + "' has been injected into other beans [" + StringUtils.collectionToCommaDelimitedString(actualDependentBeans) + "] in its raw version as part of a circular reference, but has eventually been wrapped. This means that said other beans do not use the final version of the bean. This is often the result of over-eager type matching - consider using 'getBeanNamesOfType' with the 'allowEagerInit' flag turned off, for example.");
+                }
+            }
+        }
+    }
+
+    try {
+        this.registerDisposableBeanIfNecessary(beanName, bean, mbd);
+        return exposedObject;
+    } catch (BeanDefinitionValidationException var16) {
+        throw new BeanCreationException(mbd.getResourceDescription(), beanName, "Invalid destruction signature", var16);
+    }
+}
+
+
+// 如果已创建，则删除缓存
+protected boolean removeSingletonIfCreatedForTypeCheckOnly(String beanName) {
+    if (!this.alreadyCreated.contains(beanName)) {
+        this.removeSingleton(beanName);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+
+protected void removeSingleton(String beanName) {
+    synchronized(this.getSingletonMutex()) {
+        super.removeSingleton(beanName);
+        this.factoryBeanObjectCache.remove(beanName);
+    }
+}
+
+
+protected void removeSingleton(String beanName) {
+    synchronized(this.singletonObjects) {
+        this.singletonObjects.remove(beanName);
+        this.singletonFactories.remove(beanName);
+        this.earlySingletonObjects.remove(beanName);
+        this.registeredSingletons.remove(beanName);
+    }
 }
 ```
 
-// 填充属性
-populateBean
 
-// 初始化
-initializeBean
-
-// 填充 beanName
-        invokeAwareMethods
-// 前置处理
-        applyBeanPostProcessorsBeforeInitialization
-
-// 初始化方法
-        invokeInitMethods
-
-// 后置处理（AOP动态代理）
-        applyBeanPostProcessorsAfterInitialization
-
-// AOP处理
-//# 后置处理  触发动态代理
-        AbstractAutoProxyCreator.postProcessAfterInitialization
-
-// 创建动态代理
-        AbstractAutoProxyCreator.createProxy
-
-// 解决循环依赖：提前引用
-// 提前引用
-        getEarlyBeanReference()
-// 创建代理
-        createProxy
 
 #### 25，Spring的依赖注入（DI）
 
