@@ -401,7 +401,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 
 ​    ConcurrentSkipListMap.java
 
-![](D:\abc\giteeCode\java-note\跳跃表.png)
+![](/Users/huxiangming/Code/github/java-note/assets/跳跃表.png)
 
 ### 19，dubbo的整体架构设计和分层
 
@@ -538,7 +538,7 @@ public static void gc() {
 
 ### 24，gitee开源许可证怎么选
 
-![](D:\abc\giteeCode\java-note\开源许可证.png)
+![](/Users/huxiangming/Code/github/java-note/assets/开源许可证.png)
 
 参考：[代码开源如何选择开源许可证_JackieDYH的博客-CSDN博客_gitee开源许可证选哪个](https://blog.csdn.net/JackieDYH/article/details/105800230?utm_term=%E6%80%8E%E4%B9%88%E9%80%89%E6%8B%A9gitte%E7%9A%84%E5%BC%80%E6%BA%90%E8%AE%B8%E5%8F%AF%E8%AF%81&utm_medium=distribute.pc_aggpage_search_result.none-task-blog-2~all~sobaiduweb~default-1-105800230&spm=3001.4430)
 
@@ -927,9 +927,9 @@ public BoundSql getBoundSql(Object parameterObject) {
 }
 ```
 
-![](D:\abc\giteeCode\java-note\MixedSqlSource.png)
+![](/Users/huxiangming/Code/github/java-note/assets/MixedSqlSource.png)
 
-![](D:\abc\giteeCode\java-note\2022-05-07-15-57-50-image.png)
+![](/Users/huxiangming/Code/github/java-note/assets/2022-05-07-15-57-50-image.png)
 
 ```java
 // 进入rootSqlNode.apply方法,来到MixedSqlNode
