@@ -109,7 +109,9 @@ i - (i >>> 1) 得到
 即15 - 7 = 8
 ```
 
-#### 3，System.out.print()方法，带有synchronized锁
+#### 3，JDK源码中的
+
+* System.out.print方法都带synchronized锁
 
 ```java
 public final static PrintStream out = null;    // System类中
@@ -143,11 +145,29 @@ private void write(String s) {
 }
 ```
 
-#### 4，java.util包中有一个Objects工具类
+* System类的identityHashCode方法
+
+```java
+// java.lang.System 此方法返回由Object.hashCode返回的值
+/**
+ * Returns the same hash code for the given object as
+ * would be returned by the default method hashCode(),
+ * whether or not the given object's class overrides
+ * hashCode().
+ * The hash code for the null reference is zero.
+ *
+ * @param x object for which the hashCode is to be calculated
+ * @return  the hashCode
+ * @since   JDK1.1
+ */
+public static native int identityHashCode(Object x);
+```
+
+* java.util包中有一个Objects工具类
 
 有equals, deepEquals, hashCode, hash, toString, compare等方法
 
-```aidl
+```java
 public static int hashCode(Object o) {
     return o != null ? o.hashCode() : 0;
 }
@@ -157,78 +177,108 @@ public static int hash(Object... values) {
 }
 ```
 
-#### 5，HashMap 1.7和1.8的区别之一
+* 在Arrays中有使用Array.newInstance方法
 
-​    1.7是头插法，1.8是尾插法
-
-#### 6，jdk中的Array类
-
-（1）在Arrays中有使用Array.newInstance方法
-
-```aidl
-    public static <T,U> T[] copyOf(U[] original, int newLength, Class<? extends T[]> newType) {
-        @SuppressWarnings("unchecked")
-        T[] copy = ((Object)newType == (Object)Object[].class)
+```java
+public static <T,U> T[] copyOf(U[] original, int newLength, Class<? extends T[]> newType) {
+    @SuppressWarnings("unchecked")
+    T[] copy = ((Object)newType == (Object)Object[].class)
             ? (T[]) new Object[newLength]
             : (T[]) Array.newInstance(newType.getComponentType(), newLength);
-        System.arraycopy(original, 0, copy, 0,
+    System.arraycopy(original, 0, copy, 0,
                          Math.min(original.length, newLength));
-        return copy;
-    }
-```
-
-（2）Array.class在反射包(java.lang.reflect)中
-
-```aidl
-    public static Object newInstance(Class<?> componentType, int length)
-        throws NegativeArraySizeException {
-        return newArray(componentType, length);
-    }
-```
-
-#### 7，jad反编译工具
-
-（1）下载：https://varaneckas.com/jad/  <br>
-（2）解压，不需其它安装操作<br>
-（3）使用：打开cmd，切换到jad所在路径，执行命令：jad  <br> D:\study\gitcode\algo\target\classes\jdk\ListArray.class  <br>
-注意是.class文件，得到一个.jad文件，用记事本打开就行
-
-```aidl
-// Decompiled by Jad v1.5.8g. Copyright 2001 Pavel Kouznetsov.
-// Jad home page: http://www.kpdus.com/jad.html
-// Decompiler options: packimports(3) 
-// Source File Name:   ListArray.java
-
-package jdk;
-
-import java.io.PrintStream;
-import java.util.Arrays;
-import java.util.List;
-
-public class ListArray
-{
-
-    public ListArray()
-    {
-    }
-
-    public static void main(String args[])
-    {
-        int test[] = {
-            1, 2, 3, 4
-        };
-        // 这里入参是一个二维数组，而且是一个1行三列的二维数组，所以size为1
-        List list = Arrays.asList(new int[][] {
-            test
-        });
-        System.out.println(list.size());
-        Integer test2[] = {
-            Integer.valueOf(1), Integer.valueOf(2), Integer.valueOf(3), Integer.valueOf(4)
-        };
-        List list2 = Arrays.asList(test2);
-        System.out.println(list2.size());
-    }
+    return copy;
 }
+
+// Array.class在反射包(java.lang.reflect)中
+```
+
+#### 6，HashMap 1.7和1.8的区别
+
+（1）数据结构
+
+* Java 7及以前是数组+链表
+
+* Java 8及以后是数组+链表+红黑树。当链表长度到达8的时候，会转化成红黑树。
+
+（2）插入链表的方式
+
+* 1.7是头插法
+
+* 1.8是尾插法
+
+（3）扩容时，调整数据的方式
+
+* 1.7其实就是根据hash值重新计算索引位置，然后将数据重新放到应该在的位置。
+
+* 1.8中按扩容后的位置要么等于原位置，要么等于原位置+旧容量
+
+（4）hash值的计算方式不同
+
+* jdk1.7获取hash值是9次扰动处理=4次位运算+5次异或
+
+* JDK1.8只用了2次扰动处理=1次位运算+1次异或。jdk1.8获取hash值，是将高16位和低16位进行异或就得到了。
+
+（5）新数据的插入时机不同
+
+* 1.7中的新数据是扩容后插入，插入位置也是转移老数据之后，再单独计算的。
+
+* 1.8中是扩容前插入，转移数据时统一计算插入位置。
+
+原文链接：https://blog.csdn.net/a718515028/article/details/108265496
+
+#### 7，Happens-Before规则
+
+（1）oracle官方文档：[Threads and Locks](https://docs.oracle.com/javase/specs/jls/se6/html/memory.html) <br>
+（2）文档关于Happens-Before内容
+
+```
+17.4.4 Synchronization Order
+
+Every execution has a synchronization order. A synchronization order is a total order over all of the synchronization actions of an execution. For each thread t, the synchronization order of the synchronization actions (§17.4.2) in t is consistent with the program order (§17.4.3) of t.
+Synchronization actions induce the synchronized-with relation on actions, defined as follows:
+
+An unlock action on monitor m synchronizes-with all subsequent lock actions on m (where subsequent is defined according to the synchronization order).
+A write to a volatile variable (§8.3.1.4) v synchronizes-with all subsequent reads of v by any thread (where subsequent is defined according to the synchronization order).
+An action that starts a thread synchronizes-with the first action in the thread it starts.
+The write of the default value (zero, false or null) to each variable synchronizes-with the first action in every thread. Although it may seem a little strange to write a default value to a variable before the object containing the variable is allocated, conceptually every object is created at the start of the program with its default initialized values.
+The final action in a thread T1 synchronizes-with any action in another thread T2 that detects that T1 has terminated. T2 may accomplish this by calling T1.isAlive() or T1.join().
+If thread T1 interrupts thread T2, the interrupt by T1 synchronizes-with any point where any other thread (including T2) determines that T2 has been interrupted (by having an InterruptedException thrown or by invoking Thread.interrupted or Thread.isInterrupted).
+The source of a synchronizes-with edge is called a release, and the destination is called an acquire.
+17.4.5 Happens-before Order
+
+Two actions can be ordered by a happens-before relationship. If one action happens-before another, then the first is visible to and ordered before the second.
+If we have two actions x and y, we write hb(x, y) to indicate that x happens-before y.
+
+If x and y are actions of the same thread and x comes before y in program order, then hb(x, y).
+There is a happens-before edge from the end of a constructor of an object to the start of a finalizer (§12.6) for that object.
+If an action x synchronizes-with a following action y, then we also have hb(x, y).
+If hb(x, y) and hb(y, z), then hb(x, z).
+It should be noted that the presence of a happens-before relationship between two actions does not necessarily imply that they have to take place in that order in an implementation. If the reordering produces results consistent with a legal execution, it is not illegal.
+Discussion
+
+For example, the write of a default value to every field of an object constructed by a thread need not happen before the beginning of that thread, as long as no read ever observes that fact.
+
+More specifically, if two actions share a happens-before relationship, they do not necessarily have to appear to have happened in that order to any code with which they do not share a happens-before relationship. Writes in one thread that are in a data race with reads in another thread may, for example, appear to occur out of order to those reads.
+
+The wait methods of class Object have lock and unlock actions associated with them; their happens-before relationships are defined by these associated actions. These methods are described further in §17.8.
+
+The happens-before relation defines when data races take place.
+
+A set of synchronization edges, S, is sufficient if it is the minimal set such that the transitive closure of S with the program order determines all of the happens-before edges in the execution. This set is unique.
+
+Discussion
+
+It follows from the above definitions that:
+
+An unlock on a monitor happens-before every subsequent lock on that monitor.
+A write to a volatile field (§8.3.1.4) happens-before every subsequent read of that field.
+A call to start() on a thread happens-before any actions in the started thread.
+All actions in a thread happen-before any other thread successfully returns from a join() on that thread.
+The default initialization of any object happens-before any other actions (other than default-writes) of a program.
+When a program contains two conflicting accesses (§17.4.1) that are not ordered by a happens-before relationship, it is said to contain a data race.
+
+The semantics of operations other than inter-thread actions, such as reads of array lengths (§10.7), executions of checked casts (§5.5, §15.16), and invocations of virtual methods (§15.12), are not directly affected by data races.
 ```
 
 #### 8，两个质数1231与1237
@@ -236,9 +286,9 @@ public class ListArray
 在Boolean.java中发现其hashCode方法的返回值，true返回1231，false返回1237，为什么选这两个质数？
 
 ```java
-    public static int hashCode(boolean value) {
-        return value ? 1231 : 1237;
-    }
+public static int hashCode(boolean value) {
+    return value ? 1231 : 1237;
+}
 ```
 
 #### 9，死锁
@@ -1113,43 +1163,41 @@ public class HashMap<K,V> extends AbstractMap<K,V>
   }
   ```
   
-  
-  
   （1）处理override属性
-  
-  ```java
-    mbd.prepareMethodOverrides();
-  ```
-  
+
+```java
+  mbd.prepareMethodOverrides();
+```
+
   （2）实例化的前置处理
-  
-  ```java
-  // 给BeanPostProcessors一个机会来返回代理来替代真正的实例
-  Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
-  if (bean != null) {
-      return bean;
-  }
-  
-  // 
-  protected Object resolveBeforeInstantiation(String beanName, RootBeanDefinition mbd) {
-      Object bean = null;
-      if (!Boolean.FALSE.equals(mbd.beforeInstantiationResolved)) {
-          if (!mbd.isSynthetic() && this.hasInstantiationAwareBeanPostProcessors()) {
-              Class<?> targetType = this.determineTargetType(beanName, mbd);
-              if (targetType != null) {
-                  bean = this.applyBeanPostProcessorsBeforeInstantiation(targetType, beanName);
-                  if (bean != null) {
-                      bean = this.applyBeanPostProcessorsAfterInitialization(bean, beanName);
-                  }
-              }
-          }
-  
-          mbd.beforeInstantiationResolved = bean != null;
-      }
-  
-      return bean;
-  }
-  ```
+
+```java
+// 给BeanPostProcessors一个机会来返回代理来替代真正的实例
+Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
+if (bean != null) {
+    return bean;
+}
+
+// 
+protected Object resolveBeforeInstantiation(String beanName, RootBeanDefinition mbd) {
+    Object bean = null;
+    if (!Boolean.FALSE.equals(mbd.beforeInstantiationResolved)) {
+        if (!mbd.isSynthetic() && this.hasInstantiationAwareBeanPostProcessors()) {
+            Class<?> targetType = this.determineTargetType(beanName, mbd);
+            if (targetType != null) {
+                bean = this.applyBeanPostProcessorsBeforeInstantiation(targetType, beanName);
+                if (bean != null) {
+                    bean = this.applyBeanPostProcessorsAfterInitialization(bean, beanName);
+                }
+            }
+        }
+
+        mbd.beforeInstantiationResolved = bean != null;
+    }
+
+    return bean;
+}
+```
 
 * 创建bean
 
@@ -1274,8 +1322,6 @@ protected void removeSingleton(String beanName) {
     }
 }
 ```
-
-
 
 #### 25，Spring的依赖注入（DI）
 
@@ -1629,10 +1675,10 @@ java.util.concurrent包下的容器都是安全失败的，可以在多线程下
 ![img.png](/Users/huxiangming/Code/github/java-note/assets/img_0_SimpleDateFormat使用ThreadLocal.png)
 
 ```java
-    // ThreadLocal类中的方法
-    protected T initialValue() {
-        return null;
-    }
+// ThreadLocal类中的方法
+protected T initialValue() {
+    return null;
+}
 ```
 
 ThreadLocal内存泄露的根源，由于ThreadLocalMap的生命周期跟Thread一样长，如果没有手动删除对应的key，就会导致内存泄露，而不是因为弱引用
@@ -2028,7 +2074,7 @@ b. synchronized<br>
 
 otSpot采用Oop-Klass模型来表示Java对象，其中Klass对应着Java对象的类型（Class），而Oop则对应着Java对象的实例（Instance）。
 
-```
+```cpp
 // hotspot/src/share/vm/interpreter/interpreterRuntime.cpp
 JRT_ENTRY(void, InterpreterRuntime::_new(JavaThread* current, ConstantPool* pool, int index))
   Klass* k = pool->klass_at(index, CHECK);
@@ -2061,7 +2107,8 @@ JRT_END
 
 oop(Ordinary Object Pointer) 继承体系：
 
-```
+```cpp
+// hotspot/src/share/vm/oops/oopsHierarchy.hpp
 typedef class oopDesc*                    oop;
 typedef class   instanceOopDesc*            instanceOop;
 typedef class   arrayOopDesc*               arrayOop;
@@ -2071,7 +2118,8 @@ typedef class     typeArrayOopDesc*           typeArrayOop;
 
 oopDesc类，对象头包括markword和元类型指针
 
-```
+```cpp
+// hotspot/src/share/vm/oops/oop.hpp
 class oopDesc {
   friend class VMStructs;
   friend class JVMCIVMStructs;
@@ -2087,7 +2135,7 @@ class oopDesc {
 
 klass类
 
-```
+```cpp
 class Klass : public Metadata {
   friend class VMStructs;
   friend class JVMCIVMStructs;
