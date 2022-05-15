@@ -401,7 +401,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 
 ​    ConcurrentSkipListMap.java
 
-![](/Users/huxiangming/Code/github/java-note/assets/跳跃表.png)
+![](assets/跳跃表.png)
 
 ### 19，dubbo的整体架构设计和分层
 
@@ -538,7 +538,7 @@ public static void gc() {
 
 ### 24，gitee开源许可证怎么选
 
-![](/Users/huxiangming/Code/github/java-note/assets/开源许可证.png)
+![](assets/开源许可证.png)
 
 参考：[代码开源如何选择开源许可证_JackieDYH的博客-CSDN博客_gitee开源许可证选哪个](https://blog.csdn.net/JackieDYH/article/details/105800230?utm_term=%E6%80%8E%E4%B9%88%E9%80%89%E6%8B%A9gitte%E7%9A%84%E5%BC%80%E6%BA%90%E8%AE%B8%E5%8F%AF%E8%AF%81&utm_medium=distribute.pc_aggpage_search_result.none-task-blog-2~all~sobaiduweb~default-1-105800230&spm=3001.4430)
 
@@ -652,11 +652,11 @@ typedef unsigned __int64 julong;
 
 ### 31，堆转储的转储是什么意思
 
-![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-04-30-19-17-42-image.png)
+![](assets/转储.png)
 
 ### 32，Hotspot中定义的5种对象状态
 
-![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-04-30-19-36-45-image.png)
+![](assets/Hotspot中定义的5种对象状态.png)
 
 ### 33，JVM内部定义的类状态
 
@@ -679,31 +679,31 @@ enum ClassState {
 
 * 命令：./gradlew :spring-oxm:compileTestJava  编译成功
 
-![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-01-13-27-01-image.png)
+![](assets/spring编译成功.png)
 
 * sync 成功
 
-![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-01-16-20-04-image.png)
+![](assets/gradle按钮-编译成功.png)
 
 ### 35，调试循环依赖
 
 （1）配置文件和依赖bean的准备
 
-![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-18-47-34-image.png)
+![](assets/xml配置循环依赖bean.png)
 
-![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-18-48-16-image.png)
+![](assets/依赖bean的java代码.png)
 
 Class B的内容类似A，这里省略。
 
 （2）开始调试，一直进入到refresh()方法 --> finishBeanFactoryInitialization --> preInstantiateSingletons()方法
 
-![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-18-46-33-image.png)
+![](assets/进入preInstantiateSingletons方法.png)
 
 可以看到，要实例化的beanNames有2个，就是我们想要的a和b。
 
 首先是处理a，重点关注bd即beanDefinition中的propertyValues，可以看到在propertyValuesList只有一个元素：属性b，name是b，value是一个RuntimeBeanReference对象，属性beanName为b。
 
-![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-19-00-49-image.png)
+![](assets/RuntimeBeanReference存入.png)
 
 这是在什么时候保存的？答案是在beanDefinition解析阶段，有一个处理步骤是解析property子元素：parsePropertyElements(ele, bd)，在此方法中，比如解析xml中的a的属性b，会把property标签中的ref="b"保存为RuntimeBeanReference，源码如下：
 
@@ -796,15 +796,15 @@ public Object parsePropertyValue(Element ele, BeanDefinition bd, String property
 
 然后一路跟进populateBean方法，F7进入方法：
 
-![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-19-20-34-image.png)
+![](assets/populateBean方法.png)
 
 看到autowireMode的值是0，不会走这个if分支：
 
-![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-19-30-41-image.png)
+![](assets/autowireMode为0.png)
 
 重点是applyPropertyValues方法，按F7进入，来到resolveValueIfNecessary方法。
 
-![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-19-38-45-image.png)
+![](assets/ValueResolver解析依赖bean.png)
 
 进入valueResolver的resolveValueIfNecessary方法，来到第一个分支，进入resolveReference方法，发现依赖bean（此处是b）是在这里创建的，熟悉的beanFactory.getBean()方法。
 
@@ -863,23 +863,23 @@ private Object resolveReference(Object argName, RuntimeBeanReference ref) {
 
 同样的，创建b时发现bd中propertyValues存放的a的value也是RuntimeBeanReference类型。
 
-![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-20-55-20-image.png)
+![](assets/创建b时发现b依赖a.png)
 
 创建完成之后，a中有b，b中有a，循环往复：
 
-![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-21-16-36-image.png)
+![](assets/循环依赖的效果展示.png)
 
 一直按F8之后，回到这里：
 
-![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-21-22-39-image.png)
+![](assets/回到preInstantiateSingletons方法.png)
 
 因为以上所有的操作，都是这个循环开始处理beanName为a的情况，处理完之后回到这里，开始处理beanName为b的情况。
 
-![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-21-24-45-image.png)
+![](assets/遍历到第二个beanName，即b.png)
 
 完成之后，可以看到缓存的情况：
 
-![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-02-21-29-09-image.png)
+![](assets/查看一级缓存中的单例.png)
 
 ### 36，mybatis调试sql
 
@@ -927,9 +927,9 @@ public BoundSql getBoundSql(Object parameterObject) {
 }
 ```
 
-![](/Users/huxiangming/Code/github/java-note/assets/MixedSqlSource.png)
+![](assets/MixedSqlSource.png)
 
-![](/Users/huxiangming/Code/github/java-note/assets/2022-05-07-15-57-50-image.png)
+![](assets/2022-05-07-15-57-50-image.png)
 
 ```java
 // 进入rootSqlNode.apply方法,来到MixedSqlNode

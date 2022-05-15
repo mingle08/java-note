@@ -561,7 +561,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 看一下PostProcessor的调用关系：
 
-![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-09-00-32-39-image.png)
+![](assets/postProcessor的调用关系.png)
 
 ```java
 // CommonAnnotationBeanPostProcessor.java的部分注释

@@ -1672,7 +1672,7 @@ java.util.concurrent包下的容器都是安全失败的，可以在多线程下
 
 #### 31，ThreadLocal与SimpleDateFormat
 
-![img.png](/Users/huxiangming/Code/github/java-note/assets/img_0_SimpleDateFormat使用ThreadLocal.png)
+![img.png](assets/img_0_SimpleDateFormat使用ThreadLocal.png)
 
 ```java
 // ThreadLocal类中的方法
@@ -1688,7 +1688,7 @@ ThreadLocal正确的使用方法：<br>
 
 #### 32，HTTP消息结构
 
-![img_1.png](/Users/huxiangming/Code/github/java-note/assets/img_1_http消息结构.png)
+![img_1.png](assets/img_1_http消息结构.png)
 
 #### 33，部分linux命令
 
@@ -1700,7 +1700,7 @@ ThreadLocal正确的使用方法：<br>
 
 （1）TCP释放连接，哪一方处理time_await状态？<br>
 
-![img_2.png](/Users/huxiangming/Code/github/java-note/assets/img_2_TCP握手挥手.png)
+![img_2.png](assets/img_2_TCP握手挥手.png)
 
 （2）TCP拥塞机制<br>
 （3）TCP为什么有粘包和拆包<br>
@@ -1851,7 +1851,7 @@ Java平台中，因为有内置锁的机制，每个对象都可以承担锁的�
 对于任意的对象objectX，objectX的Entry Set用于存储等待获取objectX这个锁的所有线程，也就是传说中的锁池，objectX的Wait Set用于存储执行了objectX.wait()/wait(long)的线程，也就是等待池。<br>
 原文链接：https://blog.csdn.net/qq_22498277/article/details/82184419
 
-![img_3.png](/Users/huxiangming/Code/github/java-note/assets/img_3_ObjectMonitor.png)
+![img_3.png](assets/img_3_ObjectMonitor.png)
 
 （1）准备争抢会进入临界区的线程会进入Entry Set；<br>
 （2）只有一个线程会进去临界区，独占锁；<br>
@@ -1866,7 +1866,7 @@ Java平台中，因为有内置锁的机制，每个对象都可以承担锁的�
 1. Spring的核心类介绍<br>
    1.1  DefaultListableBeanFactory<br>
 
-![img_4.png](/Users/huxiangming/Code/github/java-note/assets/img_4_BeanFactory.png)
+![img_4.png](assets/img_4_BeanFactory.png)
 
 AliasRegistry  定义对alias的简单增删改等操作<br>
 SimpleAliasRegistry  主要使用map作为alias的缓存，并对接口AliasRegistry进行实现<br>
@@ -1886,7 +1886,7 @@ DefaultListableBeanFactory  综合上面所有功能，主要是对bean注册后
 
 1.2  XmlBeanDefinitionReader
 
-![img_5.png](/Users/huxiangming/Code/github/java-note/assets/img_5_XmlBeanDefinitionReader类.png)
+![img_5.png](assets/img_5_XmlBeanDefinitionReader类.png)
 
 ResourceLoader  定义资源加载器，主要应用于根据给定的资源文件地址返回对应的Resource<br>
 BeanDefinitionReader  主要定义资源文件读取并置换为BeanDefinition的各个功能<br>
@@ -1900,7 +1900,7 @@ BeanDefinitionParserDelegate  定义解析Element的各种方法<br>
 
 2.1  配置文件的封装
 
-![img_6.png](/Users/huxiangming/Code/github/java-note/assets/img_6_resource类.png)
+![img_6.png](assets/img_6_resource类.png)
 
 ```java
     // AbstractAutowireCapableBeanFactory
@@ -1958,7 +1958,7 @@ public class XmlBeanFactory extends DefaultListableBeanFactory {
 ```
 
 InputSource，EntityResolver都在jdk中
-![img_7.png](/Users/huxiangming/Code/github/java-note/assets/img_7_InputSource类.png)
+![img_7.png](assets/img_7_InputSource类.png)
 
 ```java
     // XmlBeanDefinitionReader
@@ -2225,7 +2225,7 @@ class Klass : public Metadata {
 }
 ```
 
-![img_8.png](/Users/huxiangming/Code/github/java-note/assets/img_8_OOP-Klass模型.png)
+![img_8.png](assets/img_8_OOP-Klass模型.png)
 
 HotSpot是基于c++实现，而c++是一门面向对象的语言，本身具备面向对象基本特征，所以Java中的对象表示，最简单的做法是为每个Java类生成一个c++类与之对应。
 
@@ -2656,8 +2656,8 @@ protected void doBegin(Object transaction, TransactionDefinition definition) {
 
 （1）主键索引和普通索引的查询区别<br>
 摘自b站：bobby的技术笔记
-![主键索引.png](/Users/huxiangming/Code/github/java-note/assets/img_9_主键索引.png)
-![回表查询 .png](/Users/huxiangming/Code/github/java-note/assets/img_10_普通索引（回表查询）.png)
+![主键索引.png](assets/img_9_主键索引.png)
+![回表查询 .png](assets/img_10_普通索引（回表查询）.png)
 
 （2）Multi-Range Read（多范围读）<br>
 a. 将查询得到的辅助索引键值存放于一个缓存中，这时缓存中的数据是根据辅助索引键值排序的<br>
@@ -2666,7 +2666,7 @@ c. 根据RowID的排序顺序来访问实际的数据文件<br>
 若启用Multi-Range Read特性，在执行计划的列Extra除了看到Using index condition外，还会看见Using MRR选项<br>
 （3）Index Condition Pushdown（ICP，索引下推）<br>
 查看ICP设置的sql语句：select @@optimizer_switch;
-![索引下推.png](/Users/huxiangming/Code/github/java-note/assets/img_11_索引下推.png)
+![索引下推.png](assets/img_11_索引下推.png)
 适合于联合索引<br>
 参考：<br>
 https://www.cnblogs.com/xujunkai/p/12622758.html<br>
@@ -2685,7 +2685,7 @@ https://www.zhangshengrong.com/p/7B1LqVWDaw/
 * 在mysql数据库中还存在另外一种分布式事务，其在存储引擎与插件之间，又或者在存储引擎与存储引擎之间，称之炎内部XA事务
 * 最为常见的内部XA事务存在于binlog与InnoDB存储引擎之间：mysql redo log的二阶段提交<br>
   参考：https://www.cnblogs.com/kiwi-deng/p/13641783.html
-  ![redo log二阶段提交.png](/Users/huxiangming/Code/github/java-note/assets/img_12_redo%20log二阶段提交.png)
+  ![redo log二阶段提交.png](assets/img_12_redo%20log二阶段提交.png)
 
 #### 53，事务的2PC与3PC的区别
 
@@ -2715,7 +2715,7 @@ https://www.zhangshengrong.com/p/7B1LqVWDaw/
   **Confirm** ：执行真正的业务操作，不作任何业务检查，只使用Try阶段预留的业务资源，Confirm操作要求具备幂等设计，Confirm失败后需要进行重试；<br>
   **Cancel**：如果任何一个服务的业务方法执行出错，那么这里就需要进行补偿，即执行回滚操作，释放Try阶段预留的业务资源 ，Cancel操作要求具备幂等设计，Cancel失败后需要进行重试
 
-![TCC](/Users/huxiangming/Code/github/java-note/assets/img_13_TCC.png)
+![TCC](assets/img_13_TCC.png)
 
 * TCC中的两阶段提交并没有对开发者完全屏蔽，也就是说从代码层面，开发者是可以感受到两阶段提交的存在。如上述航班预定案例：在第一阶段，航空公司需要提供try接口(机票资源预留)。在第二阶段，航空公司提需要提供confirm/cancel接口(确认购买机票/取消预留)。开发者明显的感知到了两阶段提交过程的存在。
 * try、confirm/cancel在执行过程中，一般都会开启各自的本地事务，来保证方法内部业务逻辑的ACID特性。
@@ -2749,13 +2749,13 @@ https://www.zhangshengrong.com/p/7B1LqVWDaw/
 
 #### 58，redis主从复制
 
-![redis主从复制](/Users/huxiangming/Code/github/java-note/assets/img_14_redis主从复制.png)
+![redis主从复制](assets/img_14_redis主从复制.png)
 
 #### 59，springboot自动装配
 
-![springboot注解](/Users/huxiangming/Code/github/java-note/assets/img_17_springboot注解.png)
+![springboot注解](assets/img_17_springboot注解.png)
 
-![spring.factories](/Users/huxiangming/Code/github/java-note/assets/img_16_spring.factories.png)
+![spring.factories](assets/img_16_spring.factories.png)
 
 #### 60，MySQL各版本，对于add Index的处理方式是不同的，主要有三种：
 
