@@ -2235,10 +2235,16 @@ HotSpot是基于c++实现，而c++是一门面向对象的语言，本身具备�
 
 链接：https://www.jianshu.com/p/424a920771a3
 
+![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-15-12-43-12-image.png)
+
+C++多态类中的虚函数表是Compile-Time还是Run-Time建立的？
+
+标准答案：虚拟函数表是在编译时期就建立的，各个虚拟函数这是被组织成了一个虚拟函数的入口地址的数组，而对象的隐藏成员---虚拟函数表指针，是在运行期----也就是构造函数被调用时进行初始化的，这是实现多态的关键。
+
 #### 48，Spring事务怎么实现回滚
 
 （1）Spring的事务管理是如何实现的<br>
-总述：Spring事务是由AOP实现的，首先要生成具体的代码对象，然后按照AOP的整套流程来执行具体的操作逻辑，正常情况下要通过通知来完成核心功能，但是事务不是通过通知来实现的，而是通过TransactionInterceptorjg来实现的，通过调用invoke方法来实现具体的逻辑<br>
+总述：Spring事务是由AOP实现的，首先要生成具体的代理对象，然后按照AOP的整套流程来执行具体的操作逻辑，正常情况下要通过通知来完成核心功能，但是事务不是通过通知来实现的，而是通过TransactionInterceptor来实现的，通过调用invoke方法来实现具体的逻辑<br>
 分述：a. 先做准备工作，解析各个方法上事务相关的属性，根据具体的属性来判断是否开启新事务<br>
     b. 当需要开启的时候，获取数据库连接，关闭自动提交功能，开启事务<br>
     c. 执行具体的sql逻辑操作<br>
@@ -2247,6 +2253,174 @@ e. 回滚之后，要清除相关的事务信息：cleanupTransactionInfo
 f. 如果没有发生异常，则执行commitTransactionAfterReturning方法，完成事务的提交，提交的逻辑是通过doCommit来实现：先获取数据库连接对象，通过连接对象提交
 
 （2）源码
+
+首先从配置文件的解析开始
+
+```xml
+<tx:annotation-driven transaction-manager="transactionManager"/>
+```
+
+我们回顾一下解析并注册BeanDefinition方法:
+
+```java
+// org/springframework/beans/factory/xml/DefaultBeanDefinitionDocumentReader.java
+protected void parseBeanDefinitions(Element root, BeanDefinitionParserDelegate delegate) {
+    if (delegate.isDefaultNamespace(root)) {
+        NodeList nl = root.getChildNodes();
+        for (int i = 0; i < nl.getLength(); i++) {
+            Node node = nl.item(i);
+            if (node instanceof Element) {
+                Element ele = (Element) node;
+                if (delegate.isDefaultNamespace(ele)) {
+                    parseDefaultElement(ele, delegate);
+                }
+                else {
+                    delegate.parseCustomElement(ele);
+                }
+            }
+        }
+    }
+    else {
+        delegate.parseCustomElement(root);
+    }
+}
+```
+
+因为tx标签是Spring的自定义标签，所以由parseCustomElement方法处理
+
+```java
+// org/springframework/beans/factory/xml/BeanDefinitionParserDelegate.java
+public BeanDefinition parseCustomElement(Element ele) {
+		return parseCustomElement(ele, null);
+	}
+
+public BeanDefinition parseCustomElement(Element ele, BeanDefinition containingBd) {
+    String namespaceUri = getNamespaceURI(ele);
+    NamespaceHandler handler = this.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);
+    if (handler == null) {
+        error("Unable to locate Spring NamespaceHandler for XML schema namespace [" + namespaceUri + "]", ele);
+        return null;
+    }
+    return handler.parse(ele, new ParserContext(this.readerContext, this, containingBd));
+}
+
+// org/springframework/transaction/config/TxNamespaceHandler.java
+public void init() {
+    registerBeanDefinitionParser("advice", new TxAdviceBeanDefinitionParser());
+    registerBeanDefinitionParser("annotation-driven", new AnnotationDrivenBeanDefinitionParser());
+    registerBeanDefinitionParser("jta-transaction-manager", new JtaTransactionManagerBeanDefinitionParser());
+}
+
+// org/springframework/transaction/config/AnnotationDrivenBeanDefinitionParser.java
+public BeanDefinition parse(Element element, ParserContext parserContext) {
+    registerTransactionalEventListenerFactory(parserContext);
+    String mode = element.getAttribute("mode");
+    if ("aspectj".equals(mode)) {
+        // mode="aspectj"
+        registerTransactionAspect(element, parserContext);
+    }
+    else {
+        // mode="proxy"
+        AopAutoProxyConfigurer.configureAutoProxyCreator(element, parserContext);
+    }
+    return null;
+}
+
+/* 
+    默认是proxy模式
+    注册了三个beanDefinition:
+    (1) TransactionAttributeSource
+    (2) TransactionInterceptor
+    (3) TransactionAttributeSourceAdvisor
+*/
+private static class AopAutoProxyConfigurer {
+    public static void configureAutoProxyCreator(Element element, ParserContext parserContext) {
+        AopNamespaceUtils.registerAutoProxyCreatorIfNecessary(parserContext, element);
+
+        String txAdvisorBeanName = TransactionManagementConfigUtils.TRANSACTION_ADVISOR_BEAN_NAME;
+        if (!parserContext.getRegistry().containsBeanDefinition(txAdvisorBeanName)) {
+            Object eleSource = parserContext.extractSource(element);
+
+            // Create the TransactionAttributeSource definition.
+            RootBeanDefinition sourceDef = new RootBeanDefinition(
+                    "org.springframework.transaction.annotation.AnnotationTransactionAttributeSource");
+            sourceDef.setSource(eleSource);
+            sourceDef.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
+            String sourceName = parserContext.getReaderContext().registerWithGeneratedName(sourceDef);
+
+            // Create the TransactionInterceptor definition.
+            RootBeanDefinition interceptorDef = new RootBeanDefinition(TransactionInterceptor.class);
+            interceptorDef.setSource(eleSource);
+            interceptorDef.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
+            registerTransactionManager(element, interceptorDef);
+            interceptorDef.getPropertyValues().add("transactionAttributeSource", new RuntimeBeanReference(sourceName));
+            String interceptorName = parserContext.getReaderContext().registerWithGeneratedName(interceptorDef);
+
+            // Create the TransactionAttributeSourceAdvisor definition.
+            RootBeanDefinition advisorDef = new RootBeanDefinition(BeanFactoryTransactionAttributeSourceAdvisor.class);
+            advisorDef.setSource(eleSource);
+            advisorDef.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
+            advisorDef.getPropertyValues().add("transactionAttributeSource", new RuntimeBeanReference(sourceName));
+            advisorDef.getPropertyValues().add("adviceBeanName", interceptorName);
+            if (element.hasAttribute("order")) {
+                advisorDef.getPropertyValues().add("order", element.getAttribute("order"));
+            }
+            parserContext.getRegistry().registerBeanDefinition(txAdvisorBeanName, advisorDef);
+
+            CompositeComponentDefinition compositeDef = new CompositeComponentDefinition(element.getTagName(), eleSource);
+            compositeDef.addNestedComponent(new BeanComponentDefinition(sourceDef, sourceName));
+            compositeDef.addNestedComponent(new BeanComponentDefinition(interceptorDef, interceptorName));
+            compositeDef.addNestedComponent(new BeanComponentDefinition(advisorDef, txAdvisorBeanName));
+            parserContext.registerComponent(compositeDef);
+        }
+    }
+}
+
+
+// @Transactional注解在哪里被解析
+public class SpringTransactionAnnotationParser implements TransactionAnnotationParser, Serializable {
+
+	@Override
+	public TransactionAttribute parseTransactionAnnotation(AnnotatedElement ae) {
+		AnnotationAttributes attributes = AnnotatedElementUtils.getMergedAnnotationAttributes(ae, Transactional.class);
+		if (attributes != null) {
+			return parseTransactionAnnotation(attributes);
+		}
+		else {
+			return null;
+		}
+	}
+
+    ......
+}
+
+// 此方法在哪儿被调用
+// org/springframework/transaction/annotation/AnnotationTransactionAttributeSource.java
+@Override
+protected TransactionAttribute findTransactionAttribute(Method method) {
+    return determineTransactionAttribute(method);
+}
+
+@Override
+protected TransactionAttribute findTransactionAttribute(Class<?> clazz) {
+    return determineTransactionAttribute(clazz);
+}
+
+protected TransactionAttribute determineTransactionAttribute(AnnotatedElement ae) {
+    if (ae.getAnnotations().length > 0) {
+        for (TransactionAnnotationParser annotationParser : this.annotationParsers) {
+            TransactionAttribute attr = annotationParser.parseTransactionAnnotation(ae);
+            if (attr != null) {
+                return attr;
+            }
+        }
+    }
+    return null;
+}
+```
+
+
+
 a. TransactionInterceptor类
 
 ```java
