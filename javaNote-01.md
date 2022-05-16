@@ -990,7 +990,7 @@ b. 如果在readview的右边（比readview大），或者在readview区间内�
 
 #### 20，mysql主从同步原理
 
-![主从复制.png](img_15_mysql主从复制.png)
+![主从复制.png](assets/img_15_mysql主从复制.png)
 （1）有三个线程：binlog dump thread（master）、I/O thread（slave）和sql thread（slave）<br>
 
 （2）过程：<br>
@@ -2790,7 +2790,7 @@ https://www.zhangshengrong.com/p/7B1LqVWDaw/
 
 #### 62，线程池submit不抛异常的原因
 
-![线程池submit](img_19_线程池的相关类继承关系.png)
+![线程池submit](assets/img_19_线程池的相关类继承关系.png)
 
 ```java
 ThreadPoolExecutor executorService = new ThreadPoolExecutor(2, 2,30, TimeUnit.SECONDS, new ArrayBlockingQueue<>(10));
