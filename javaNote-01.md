@@ -196,7 +196,26 @@ public static <T,U> T[] copyOf(U[] original, int newLength, Class<? extends T[]>
 * 延迟双删：先删除redis缓存，再更新mysql，然后删除redis缓存
 * 先更新mysql，再删除缓存，如果删除失败，发到mq，消费mq消息删除缓存
 * 使用canal，伪装成mysql的一台从机，将redis删除的消息发送到mq
+
+#### 5，mysql体系结构
+![主从复制.png](assets/mysql体系结构.png)
+
+（1）Server层
+* 连接池组件
+* 管理服务和工具组件
+* SQL接口组件
+* 查询分析器组件
+* 优化器组件
+* 缓存组件
   
+（2）存储引擎层
+* 插件式存储引擎：基于表，而不是数据库
+
+（3）物理文件
+
+另一张图
+![查询sql执行流程](assets/查询sql执行流程.png)
+参考：https://blog.csdn.net/qq_42239520/article/details/122145983
 #### 6，HashMap 1.7和1.8的区别
 
 （1）数据结构
@@ -2332,10 +2351,11 @@ public BeanDefinition parse(Element element, ParserContext parserContext) {
 
 /* 
     默认是proxy模式
-    注册了三个beanDefinition:
-    (1) TransactionAttributeSource
-    (2) TransactionInterceptor
-    (3) TransactionAttributeSourceAdvisor
+    注册了4个beanDefinition:
+    (1) InfrastructureAdvisorAutoProxyCreator
+    (2) TransactionAttributeSource
+    (3) TransactionInterceptor
+    (4) TransactionAttributeSourceAdvisor
 */
 private static class AopAutoProxyConfigurer {
     public static void configureAutoProxyCreator(Element element, ParserContext parserContext) {
@@ -2380,7 +2400,6 @@ private static class AopAutoProxyConfigurer {
     }
 }
 
-
 // @Transactional注解在哪里被解析
 public class SpringTransactionAnnotationParser implements TransactionAnnotationParser, Serializable {
 
@@ -2423,7 +2442,318 @@ protected TransactionAttribute determineTransactionAttribute(AnnotatedElement ae
 }
 ```
 
+Spring是怎么找到@Transactional注解的？BeanPostProcessor的实现方法在AbstractAutoProxyCreator类中
+![aop类层次关系](assets/aop类层次关系.png)
 
+```java
+// org/springframework/aop/framework/autoproxy/AbstractAutoProxyCreator.java
+@Override
+public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) throws BeansException {
+    Object cacheKey = getCacheKey(beanClass, beanName);
+
+    if (beanName == null || !this.targetSourcedBeans.contains(beanName)) {
+        if (this.advisedBeans.containsKey(cacheKey)) {
+            return null;
+        }
+        if (isInfrastructureClass(beanClass) || shouldSkip(beanClass, beanName)) {
+            this.advisedBeans.put(cacheKey, Boolean.FALSE);
+            return null;
+        }
+    }
+
+    // Create proxy here if we have a custom TargetSource.
+    // Suppresses unnecessary default instantiation of the target bean:
+    // The TargetSource will handle target instances in a custom fashion.
+    if (beanName != null) {
+        TargetSource targetSource = getCustomTargetSource(beanClass, beanName);
+        if (targetSource != null) {
+            this.targetSourcedBeans.add(beanName);
+            Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(beanClass, beanName, targetSource);
+            Object proxy = createProxy(beanClass, beanName, specificInterceptors, targetSource);
+            this.proxyTypes.put(cacheKey, proxy.getClass());
+            return proxy;
+        }
+    }
+
+    return null;
+}
+
+
+@Override
+public Object postProcessBeforeInitialization(Object bean, String beanName) {
+    return bean;
+}
+
+/**
+ * Create a proxy with the configured interceptors if the bean is
+ * identified as one to proxy by the subclass.
+ * @see #getAdvicesAndAdvisorsForBean
+ */
+@Override
+public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+    if (bean != null) {
+        Object cacheKey = getCacheKey(bean.getClass(), beanName);
+        if (!this.earlyProxyReferences.contains(cacheKey)) {
+            return wrapIfNecessary(bean, beanName, cacheKey);
+        }
+    }
+    return bean;
+}
+
+// org/springframework/aop/framework/autoproxy/AbstractAutoProxyCreator.java
+protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) {
+    if (beanName != null && this.targetSourcedBeans.contains(beanName)) {
+        return bean;
+    }
+    if (Boolean.FALSE.equals(this.advisedBeans.get(cacheKey))) {
+        return bean;
+    }
+    if (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) {
+        this.advisedBeans.put(cacheKey, Boolean.FALSE);
+        return bean;
+    }
+
+    // Create proxy if we have advice.
+    Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
+    if (specificInterceptors != DO_NOT_PROXY) {
+        this.advisedBeans.put(cacheKey, Boolean.TRUE);
+        Object proxy = createProxy(
+                bean.getClass(), beanName, specificInterceptors, new SingletonTargetSource(bean));
+        this.proxyTypes.put(cacheKey, proxy.getClass());
+        return proxy;
+    }
+
+    this.advisedBeans.put(cacheKey, Boolean.FALSE);
+    return bean;
+}
+
+// org/springframework/aop/framework/autoproxy/AbstractAdvisorAutoProxyCreator.java
+@Override
+protected Object[] getAdvicesAndAdvisorsForBean(Class<?> beanClass, String beanName, TargetSource targetSource) {
+    List<Advisor> advisors = findEligibleAdvisors(beanClass, beanName);
+    if (advisors.isEmpty()) {
+        return DO_NOT_PROXY;
+    }
+    return advisors.toArray();
+}
+
+// org/springframework/aop/framework/autoproxy/AbstractAdvisorAutoProxyCreator.java
+protected List<Advisor> findEligibleAdvisors(Class<?> beanClass, String beanName) {
+    List<Advisor> candidateAdvisors = findCandidateAdvisors();
+    List<Advisor> eligibleAdvisors = findAdvisorsThatCanApply(candidateAdvisors, beanClass, beanName);
+    extendAdvisors(eligibleAdvisors);
+    if (!eligibleAdvisors.isEmpty()) {
+        eligibleAdvisors = sortAdvisors(eligibleAdvisors);
+    }
+    return eligibleAdvisors;
+}
+
+protected List<Advisor> findAdvisorsThatCanApply(
+			List<Advisor> candidateAdvisors, Class<?> beanClass, String beanName) {
+
+    ProxyCreationContext.setCurrentProxiedBeanName(beanName);
+    try {
+        return AopUtils.findAdvisorsThatCanApply(candidateAdvisors, beanClass);
+    }
+    finally {
+        ProxyCreationContext.setCurrentProxiedBeanName(null);
+    }
+}
+
+// org/springframework/aop/support/AopUtils.java
+public static List<Advisor> findAdvisorsThatCanApply(List<Advisor> candidateAdvisors, Class<?> clazz) {
+    if (candidateAdvisors.isEmpty()) {
+        return candidateAdvisors;
+    }
+    List<Advisor> eligibleAdvisors = new LinkedList<Advisor>();
+    for (Advisor candidate : candidateAdvisors) {
+        if (candidate instanceof IntroductionAdvisor && canApply(candidate, clazz)) {
+            eligibleAdvisors.add(candidate);
+        }
+    }
+    boolean hasIntroductions = !eligibleAdvisors.isEmpty();
+    for (Advisor candidate : candidateAdvisors) {
+        if (candidate instanceof IntroductionAdvisor) {
+            // already processed
+            continue;
+        }
+        if (canApply(candidate, clazz, hasIntroductions)) {
+            eligibleAdvisors.add(candidate);
+        }
+    }
+    return eligibleAdvisors;
+}
+
+// org/springframework/aop/support/AopUtils.java
+public static boolean canApply(Advisor advisor, Class<?> targetClass, boolean hasIntroductions) {
+    if (advisor instanceof IntroductionAdvisor) {
+        return ((IntroductionAdvisor) advisor).getClassFilter().matches(targetClass);
+    }
+    else if (advisor instanceof PointcutAdvisor) {
+        PointcutAdvisor pca = (PointcutAdvisor) advisor;
+        return canApply(pca.getPointcut(), targetClass, hasIntroductions);
+    }
+    else {
+        // It doesn't have a pointcut so we assume it applies.
+        return true;
+    }
+}
+
+public static boolean canApply(Pointcut pc, Class<?> targetClass, boolean hasIntroductions) {
+    Assert.notNull(pc, "Pointcut must not be null");
+    if (!pc.getClassFilter().matches(targetClass)) {
+        return false;
+    }
+
+    MethodMatcher methodMatcher = pc.getMethodMatcher();
+    if (methodMatcher == MethodMatcher.TRUE) {
+        // No need to iterate the methods if we're matching any method anyway...
+        return true;
+    }
+
+    IntroductionAwareMethodMatcher introductionAwareMethodMatcher = null;
+    if (methodMatcher instanceof IntroductionAwareMethodMatcher) {
+        introductionAwareMethodMatcher = (IntroductionAwareMethodMatcher) methodMatcher;
+    }
+
+    Set<Class<?>> classes = new LinkedHashSet<Class<?>>(ClassUtils.getAllInterfacesForClassAsSet(targetClass));
+    classes.add(targetClass);
+    for (Class<?> clazz : classes) {
+        Method[] methods = ReflectionUtils.getAllDeclaredMethods(clazz);
+        for (Method method : methods) {
+            if ((introductionAwareMethodMatcher != null &&
+                    introductionAwareMethodMatcher.matches(method, targetClass, hasIntroductions)) ||
+                    methodMatcher.matches(method, targetClass)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+// org/springframework/transaction/interceptor/TransactionAttributeSourcePointcut.java
+public boolean matches(Method method, Class<?> targetClass) {
+    if (targetClass != null && TransactionalProxy.class.isAssignableFrom(targetClass)) {
+        return false;
+    }
+    TransactionAttributeSource tas = getTransactionAttributeSource();
+    return (tas == null || tas.getTransactionAttribute(method, targetClass) != null);
+}
+
+// org/springframework/transaction/interceptor/AbstractFallbackTransactionAttributeSource.java
+public TransactionAttribute getTransactionAttribute(Method method, Class<?> targetClass) {
+    if (method.getDeclaringClass() == Object.class) {
+        return null;
+    }
+
+    // First, see if we have a cached value.
+    Object cacheKey = getCacheKey(method, targetClass);
+    Object cached = this.attributeCache.get(cacheKey);
+    if (cached != null) {
+        // Value will either be canonical value indicating there is no transaction attribute,
+        // or an actual transaction attribute.
+        if (cached == NULL_TRANSACTION_ATTRIBUTE) {
+            return null;
+        }
+        else {
+            return (TransactionAttribute) cached;
+        }
+    }
+    else {
+        // We need to work it out.
+        TransactionAttribute txAttr = computeTransactionAttribute(method, targetClass);
+        // Put it in the cache.
+        if (txAttr == null) {
+            this.attributeCache.put(cacheKey, NULL_TRANSACTION_ATTRIBUTE);
+        }
+        else {
+            String methodIdentification = ClassUtils.getQualifiedMethodName(method, targetClass);
+            if (txAttr instanceof DefaultTransactionAttribute) {
+                ((DefaultTransactionAttribute) txAttr).setDescriptor(methodIdentification);
+            }
+            if (logger.isDebugEnabled()) {
+                logger.debug("Adding transactional method '" + methodIdentification + "' with attribute: " + txAttr);
+            }
+            this.attributeCache.put(cacheKey, txAttr);
+        }
+        return txAttr;
+    }
+}
+
+protected TransactionAttribute computeTransactionAttribute(Method method, Class<?> targetClass) {
+    // Don't allow no-public methods as required.
+    if (allowPublicMethodsOnly() && !Modifier.isPublic(method.getModifiers())) {
+        return null;
+    }
+
+    // Ignore CGLIB subclasses - introspect the actual user class.
+    Class<?> userClass = ClassUtils.getUserClass(targetClass);
+    // The method may be on an interface, but we need attributes from the target class.
+    // If the target class is null, the method will be unchanged.
+    Method specificMethod = ClassUtils.getMostSpecificMethod(method, userClass);
+    // If we are dealing with method with generic parameters, find the original method.
+    specificMethod = BridgeMethodResolver.findBridgedMethod(specificMethod);
+
+    // First try is the method in the target class.
+    TransactionAttribute txAttr = findTransactionAttribute(specificMethod);
+    if (txAttr != null) {
+        return txAttr;
+    }
+
+    // Second try is the transaction attribute on the target class.
+    txAttr = findTransactionAttribute(specificMethod.getDeclaringClass());
+    if (txAttr != null && ClassUtils.isUserLevelMethod(method)) {
+        return txAttr;
+    }
+
+    if (specificMethod != method) {
+        // Fallback is to look at the original method.
+        txAttr = findTransactionAttribute(method);
+        if (txAttr != null) {
+            return txAttr;
+        }
+        // Last fallback is the class of the original method.
+        txAttr = findTransactionAttribute(method.getDeclaringClass());
+        if (txAttr != null && ClassUtils.isUserLevelMethod(method)) {
+            return txAttr;
+        }
+    }
+
+    return null;
+}
+
+// org/springframework/transaction/annotation/AnnotationTransactionAttributeSource.java
+@Override
+protected TransactionAttribute findTransactionAttribute(Method method) {
+    return determineTransactionAttribute(method);
+}
+
+protected TransactionAttribute determineTransactionAttribute(AnnotatedElement ae) {
+    if (ae.getAnnotations().length > 0) {
+        for (TransactionAnnotationParser annotationParser : this.annotationParsers) {
+            TransactionAttribute attr = annotationParser.parseTransactionAnnotation(ae);
+            if (attr != null) {
+                return attr;
+            }
+        }
+    }
+    return null;
+}
+
+// org/springframework/transaction/annotation/SpringTransactionAnnotationParser.java
+@Override
+public TransactionAttribute parseTransactionAnnotation(AnnotatedElement ae) {
+    // 终于看到注解类 Transactional.class
+    AnnotationAttributes attributes = AnnotatedElementUtils.getMergedAnnotationAttributes(ae, Transactional.class);
+    if (attributes != null) {
+        return parseTransactionAnnotation(attributes);
+    }
+    else {
+        return null;
+    }
+}
+```
 
 a. TransactionInterceptor类
 
@@ -2672,6 +3002,8 @@ c. 根据RowID的排序顺序来访问实际的数据文件<br>
 查看ICP设置的sql语句：select @@optimizer_switch;
 ![索引下推.png](assets/img_11_索引下推.png)
 适合于联合索引<br>
+* 不支持ICP：当进行索引查询时，首先根据索引来查找记录，然后再根据WHERE条件来过滤记录
+* 支持ICP：在取出索引的同时，判断是否可以进行WHERE条件的过滤，也就是将WHERE的部分过滤操作放在了存储引擎层。在某些查询下，可以大大减少上层SQL层对记录的索取，从而提高数据库的整体性能
 参考：<br>
 https://www.cnblogs.com/xujunkai/p/12622758.html<br>
 https://www.zhangshengrong.com/p/7B1LqVWDaw/
@@ -2679,10 +3011,11 @@ https://www.zhangshengrong.com/p/7B1LqVWDaw/
 （4）索引失效<br>
 参考：https://www.modb.pro/db/89169
 
-#### 51，OLAP和OLTP
+#### 51，名词解释
 
 （1）OLAP  联机分析处理  数据仓库  hive                     对历史数据进行分析，产生决策性的影响<br>
 （2）OLTP  联机事务处理  数据库    mysql/oracle/db2/...    支撑业务系统，在很短时间内产生结果
+（3）ISAM  索引顺序访问方法（ISAM, Indexed Sequential Access Method）
 
 #### 52，mysql内部的XA事务
 
