@@ -192,7 +192,11 @@ public static <T,U> T[] copyOf(U[] original, int newLength, Class<? extends T[]>
 
 // Array.class在反射包(java.lang.reflect)中
 ```
-
+#### 4，如何保证Redis与mysql缓存一致性
+* 延迟双删：先删除redis缓存，再更新mysql，然后删除redis缓存
+* 先更新mysql，再删除缓存，如果删除失败，发到mq，消费mq消息删除缓存
+* 使用canal，伪装成mysql的一台从机，将redis删除的消息发送到mq
+  
 #### 6，HashMap 1.7和1.8的区别
 
 （1）数据结构
