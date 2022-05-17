@@ -11,6 +11,8 @@ sh -c "$(curl -fsSL https://gitee.com/mirrors/oh-my-zsh/raw/master/tools/install
 3，github代码下载
 ```
 git clone git@github.com:mingle08/algorithm.git
+git clone git@github.com:mingle08/jdk8SourceNote.git
+git clone git@github.com:mingle08/mybatis-3-study.git
 ```
 
 4，gitee代码下载

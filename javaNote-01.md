@@ -1768,8 +1768,8 @@ https://www.cnblogs.com/ffdsj/p/12266539.html
 （3）隔离性使用锁以及MVCC,运用的优化思想有读写分离，读读并行，读写并行；<br>
 （4）一致性：通过回滚，以及恢复，和在并发环境下的隔离做到一致性。<br>
 
-#### 41，HashMap的put方法
-
+#### 41，HashMap的put方法和扩容机制
+* put方法
 ```java
 final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
                    boolean evict) {
@@ -1848,6 +1848,39 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
     afterNodeInsertion(evict);
     return null;
 } 
+```
+* 扩容机制
+![HashMap扩容机制](assets/Hashmap扩容机制.png)
+为什么 & oldCap == 0来判断？如上图所示，数字14，在原数组和新数组中的位置是一样的，而数字30，在旧数组和新数组的位置的值，二进制形式，相差最高位的1，也就是旧数组的长度
+```java
+do {
+	next = e.next;
+        // 因为oldCap的二进制形式只有一位是1，此举可以把元素按这一位分成2组
+	if ((e.hash & oldCap) == 0) {
+		if (loTail == null)
+			loHead = e;
+		else
+			loTail.next = e;
+		loTail = e;
+	}
+	else {
+		if (hiTail == null)
+			hiHead = e;
+		else
+			hiTail.next = e;
+		hiTail = e;
+	}
+} while ((e = next) != null);
+if (loTail != null) {
+	loTail.next = null;
+        // 把低位链表挂到数组上
+	newTab[j] = loHead;
+}
+if (hiTail != null) {
+	hiTail.next = null;
+        // 把高位链表挂到数组上
+	newTab[j + oldCap] = hiHead;
+}
 ```
 
 #### 42，Spring启动流程
