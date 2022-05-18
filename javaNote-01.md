@@ -1717,6 +1717,10 @@ ThreadLocal正确的使用方法：<br>
 
 （1）ping命令使用的是什么协议？ ICMP<br>
 （2）kill与kill -9的区别，kill命令的底层是什么？<br>
+    使用kill -l查看linux信号
+    kill  默认发送15 SIGTERM
+    kill -9 就是发送9 SIGKILL
+    ![linux信号](assets/linux-signals.png)
 （3）查询端口的命令是什么？ netstat<br>
 
 #### 34，TCP相关
@@ -1790,7 +1794,11 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
     */
     if ((p = tab[i = (n - 1) & hash]) == null)
         tab[i] = newNode(hash, key, value, null);
-    // 桶中已经存在元素：hash值相同
+    /**
+    桶中已经存在元素
+    例如new一个HashMap，key是Integer类型
+    数字0和32，hash值分别是0和32，虽然hash值不同，但hash & (n - 1)相等，落入同一个桶
+     */
     else {
         Node<K,V> e; K k;
         // 比较桶中第一个元素(数组中的结点), 如果hash值相等，key相等
@@ -1798,11 +1806,11 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
             ((k = p.key) == key || (key != null && key.equals(k))))
                 // 将第一个元素赋值给e，用e来记录，后面将e进行旧值覆盖
                 e = p;
-        // key不相等且为红黑树结点
+        // hash不相等，且为红黑树结点
         else if (p instanceof TreeNode)
             // 放入树中
             e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
-        // 为链表结点
+        // hash不相等，且为链表结点
         else {
             // 在链表最末插入结点
             for (int binCount = 0; ; ++binCount) {
