@@ -304,6 +304,9 @@ When a program contains two conflicting accesses (§17.4.1) that are not ordered
 The semantics of operations other than inter-thread actions, such as reads of array lengths (§10.7), executions of checked casts (§5.5, §15.16), and invocations of virtual methods (§15.12), are not directly affected by data races.
 ```
 
+（3）volatile
+https://blog.csdn.net/weixin_34384681/article/details/88840660
+
 #### 8，两个质数1231与1237
 
 在Boolean.java中发现其hashCode方法的返回值，true返回1231，false返回1237，为什么选这两个质数？
