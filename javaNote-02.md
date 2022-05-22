@@ -1075,6 +1075,7 @@ public class StaticTextSqlNode implements SqlNode {
   （1）分配内存：两种空间选择策略：TLAB，EDEN
   （2）初始化实例：填零
 ```cpp
+// hotspot/src/share/vm/interpreter/bytecodeInterpreter.cpp
 // Initialize object (if nonzero size and need) and then the header
 if (need_zero ) {
   HeapWord* to_zero = (HeapWord*) result + sizeof(oopDesc) / oopSize;
