@@ -1,10 +1,70 @@
-### 1，CAS的问题
+### 1，CAS
+* CAS存在的问题
+  
+  （1）只能操作一个变量
 
-（1）只能操作一个变量
+  （2）ABA问题
 
-（2）ABA问题
+  （3）CPU开销问题
 
-（3）CPU开销问题
+* CAS的本质
+  在 Java 中，Java 并没有直接实现 CAS，CAS 相关的实现是通过 C++ 内联汇编的形式实现的。Java 代码需通过 JNI 才能调用。
+
+  CAS 是一条 CPU 的原子指令（cmpxchg指令），不会造成所谓的数据不一致问题，Unsafe 提供的 CAS 方法（如compareAndSwapXXX）底层实现即为 CPU 指令 cmpxchg
+
+* unsafe源码
+```cpp
+// hotspot\src\share\vm\prims\unsafe.cpp
+UNSAFE_ENTRY(jboolean, Unsafe_CompareAndSwapInt(JNIEnv *env, jobject unsafe, jobject obj, jlong offset, jint e, jint x))
+  UnsafeWrapper("Unsafe_CompareAndSwapInt");
+  oop p = JNIHandles::resolve(obj);
+  jint* addr = (jint *) index_oop_from_field_offset_long(p, offset);
+  return (jint)(Atomic::cmpxchg(x, addr, e)) == e;
+UNSAFE_END
+
+UNSAFE_ENTRY(jboolean, Unsafe_CompareAndSwapLong(JNIEnv *env, jobject unsafe, jobject obj, jlong offset, jlong e, jlong x))
+  UnsafeWrapper("Unsafe_CompareAndSwapLong");
+  Handle p (THREAD, JNIHandles::resolve(obj));
+  jlong* addr = (jlong*)(index_oop_from_field_offset_long(p(), offset));
+  if (VM_Version::supports_cx8())
+    return (jlong)(Atomic::cmpxchg(x, addr, e)) == e;
+  else {
+    jboolean success = false;
+    ObjectLocker ol(p, THREAD);
+    if (*addr == e) { *addr = x; success = true; }
+    return success;
+  }
+UNSAFE_END
+```
+* Atomic::cmpxchg源码
+```cpp
+// hotspot\src\os_cpu\linux_x86\vm\atomic_linux_x86.inline.hpp
+inline jlong    Atomic::cmpxchg    (jlong    exchange_value, volatile jlong*    dest, jlong    compare_value) {
+  bool mp = os::is_MP();
+  __asm__ __volatile__ (LOCK_IF_MP(%4) "cmpxchgq %1,(%3)"
+                        : "=a" (exchange_value)
+                        : "r" (exchange_value), "a" (compare_value), "r" (dest), "r" (mp)
+                        : "cc", "memory");
+  return exchange_value;
+}
+
+// hotspot\src\os_cpu\linux_x86\vm\atomic_windows_x86.inline.hpp
+inline jint     Atomic::cmpxchg    (jint     exchange_value, volatile jint*     dest, jint     compare_value) {
+  return (*os::atomic_cmpxchg_func)(exchange_value, dest, compare_value);
+}
+
+inline jint Atomic::cmpxchg (jint exchange_value, volatile jint* dest, jint compare_value) {
+	// alternative for InterlockedCompareExchange 
+	int mp = os::is_MP(); 
+	__asm { 
+		mov edx, 
+		dest mov ecx, 
+		exchange_value mov eax, 
+		compare_value LOCK_IF_MP(mp) 
+		cmpxchg dword ptr [edx], ecx 
+	} 
+}
+```
 
 ### 2，CPU指令环
 
@@ -89,7 +149,7 @@ ring0是指CPU的运行级别，ring0是最高级别，ring1次之，ring2更次
 ### 5，符号引用，直接引用
 * 符号引用：以字符串的形式存在。
 * 直接引用：运行时实际内存地址
-* 解析：目标主要是将常量池中的以下4类符号引用转换为直接线上服务
+* 解析：目标主要是将常量池中的以下4类符号引用转换为直接引用
   1）类；
   2）接口；
   3）字段；
