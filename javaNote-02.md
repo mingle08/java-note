@@ -1001,3 +1001,63 @@ public class StaticTextSqlNode implements SqlNode {
 
 }
 ```
+
+### 37，创建对象
+* 概述
+  字节码new表示创建对象，虚拟机遇到该指令时，从栈顶取得目标对象在常量池中的索引，接着定位到目标对象的类型。接下来，虚拟机将根据该类的状态，采用相应的内存分配技术，在内存中分配实例空间，并完全实例数据和对象头的初始化。这样，一个对象就在JVM中创建好了
+* 创建流程
+  （1）获取目标对象在常量池中的索引
+  （2）定位到目标对象的类型instanceKlass
+  （3）验证类是否被解析，是否被初始化，是否满足快速分配条件
+  （4）若满足快速分配条件，则进入快速分配流程
+  （5）若不满足快速分配条件，或快速分配失败，则进入慢速分配流程
+* 快速分配
+  （1）分配内存：两种空间选择策略：TLAB，EDEN
+  （2）初始化实例：填零
+```cpp
+// Initialize object (if nonzero size and need) and then the header
+if (need_zero ) {
+  HeapWord* to_zero = (HeapWord*) result + sizeof(oopDesc) / oopSize;
+  obj_size -= sizeof(oopDesc) / oopSize;
+  if (obj_size > 0 ) {
+    memset(to_zero, 0, obj_size * HeapWordSize);
+  }
+}
+```
+  （3）设置对象头
+    设置Mark Word
+    设置类型元数据指针
+  （4）设置栈顶对象引用
+* 慢速分配
+  （1）解析：对类进行解析，确保类及依赖类已得到正确的解析和初始化
+  （2）和快速分配一样的步骤
+```cpp
+// hotspot/src/share/vm/interpreter/interpreterRuntime.cpp
+IRT_ENTRY(void, InterpreterRuntime::_new(JavaThread* thread, ConstantPool* pool, int index))
+  Klass* k_oop = pool->klass_at(index, CHECK);
+  instanceKlassHandle klass (THREAD, k_oop);
+
+  // Make sure we are not instantiating an abstract klass
+  klass->check_valid_for_instantiation(true, CHECK);
+
+  // Make sure klass is initialized
+  klass->initialize(CHECK);
+
+  // At this point the class may not be fully initialized
+  // because of recursive initialization. If it is fully
+  // initialized & has_finalized is not set, we rewrite
+  // it into its fast version (Note: no locking is needed
+  // here since this is an atomic byte write and can be
+  // done more than once).
+  //
+  // Note: In case of classes with has_finalized we don't
+  //       rewrite since that saves us an extra check in
+  //       the fast version which then would call the
+  //       slow version anyway (and do a call back into
+  //       Java).
+  //       If we have a breakpoint, then we don't rewrite
+  //       because the _breakpoint bytecode would be lost.
+  oop obj = klass->allocate_instance(CHECK);
+  thread->set_vm_result(obj);
+IRT_END
+```
