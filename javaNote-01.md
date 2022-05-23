@@ -850,9 +850,8 @@ Set<Class<?>> wrapperClasses = cachedWrapperClasses;
 if (wrapperClasses != null && !wrapperClasses.isEmpty()) {
     // 遍历扩展点包装类，用于初始化包装类实例
     for (Class<?> wrapperClass : wrapperClasses) {
-    // 找到构造方法参数类型为type（扩展类的类型）的包装类，为其注入扩展类实例
-    instance = injectExtension((T) wrapperClass.getConstructor(type)
-.newInstance(instance));
+        // 找到构造方法参数类型为type（扩展类的类型）的包装类，为其注入扩展类实例
+        instance = injectExtension((T) wrapperClass.getConstructor(type).newInstance(instance));
     }
 }
 ```
