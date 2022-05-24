@@ -155,6 +155,17 @@ ring0是指CPU的运行级别，ring0是最高级别，ring1次之，ring2更次
   3）字段；
   4）类方法和接口方法
 
+### 6，DMA(Direct Memory Access)
+DMA的工作原理是，如果按数据块进行I/O，即需要传输大量数据时，就无须CPU的介入。在这种情况下，我们可以让I/O设备与计算机内存进行直接数据交换。而CPU则可以去忙别的事情。这种将CPU的介入减少的I/O模式称为直接内存访问。
+
+问题是，将CPU从繁忙等待中解脱出来，难道DMA的整个数据读写过程不需要使用处理器的功能吗？当然不是。数据传输当然使用CPU，只不过这里使用的CPU不是计算机里面所有进程共享的CPU，而是由另外一个CPU来负责数据传输。这个另外的CPU就是DMA控制器。
+
+也许读者会问，这有什么意思，还是需要CPU繁忙等待，只不过换成一个不同的CPU来进行繁忙等待。何必这么麻烦呢？还不如就让通用CPU来处理。这里的关键是DMA里面的CPU可以比通用CPU简单，而且价格便宜很多，它只需要能够以不慢于I/O设备的速度进行数据读写即可。其他复杂功能，如算数运算、移位、逻辑运算等功能皆可以不要。
+
+DMA控制器既可以构建在设备控制器里面，也可以作为独立的实体挂在计算机主板上。而以独立形式存在的DMA控制器更为常见。
+
+原文链接：https://blog.csdn.net/u010711495/article/details/119075935
+
 ### 8，推荐用自定义的线程池
 
 ```java
@@ -502,7 +513,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 
 * 监控中心monitor：统计服务的调用次数和调用时间<br>
 
-* 窗口container：服务允许窗口<br>
+* 容器container：服务允许容器<br>
 
 #### （2）调用流程<br>
 
@@ -890,6 +901,97 @@ public Object parsePropertyValue(Element ele, BeanDefinition bd, String property
 ![](assets/autowireMode为0.png)
 
 重点是applyPropertyValues方法，按F7进入，来到resolveValueIfNecessary方法。
+```java
+// org/springframework/beans/factory/support/AbstractAutowireCapableBeanFactory.java
+protected void applyPropertyValues(String beanName, BeanDefinition mbd, BeanWrapper bw, PropertyValues pvs) {
+    if (pvs == null || pvs.isEmpty()) {
+        return;
+    }
+
+    if (System.getSecurityManager() != null && bw instanceof BeanWrapperImpl) {
+        ((BeanWrapperImpl) bw).setSecurityContext(getAccessControlContext());
+    }
+
+    MutablePropertyValues mpvs = null;
+    List<PropertyValue> original;
+
+    if (pvs instanceof MutablePropertyValues) {
+        mpvs = (MutablePropertyValues) pvs;
+        if (mpvs.isConverted()) {
+            // Shortcut: use the pre-converted values as-is.
+            try {
+                bw.setPropertyValues(mpvs);
+                return;
+            }
+            catch (BeansException ex) {
+                throw new BeanCreationException(
+                        mbd.getResourceDescription(), beanName, "Error setting property values", ex);
+            }
+        }
+        original = mpvs.getPropertyValueList();
+    }
+    else {
+        original = Arrays.asList(pvs.getPropertyValues());
+    }
+
+    TypeConverter converter = getCustomTypeConverter();
+    if (converter == null) {
+        converter = bw;
+    }
+    BeanDefinitionValueResolver valueResolver = new BeanDefinitionValueResolver(this, beanName, mbd, converter);
+
+    // Create a deep copy, resolving any references for values.
+    List<PropertyValue> deepCopy = new ArrayList<PropertyValue>(original.size());
+    boolean resolveNecessary = false;
+    for (PropertyValue pv : original) {
+        if (pv.isConverted()) {
+            deepCopy.add(pv);
+        }
+        else {
+            String propertyName = pv.getName();
+            Object originalValue = pv.getValue();
+            // 把pv形式的依赖解析成beanName，根据beanName创建bean，这里就是创建依赖bean的地方
+            Object resolvedValue = valueResolver.resolveValueIfNecessary(pv, originalValue);
+            Object convertedValue = resolvedValue;
+            boolean convertible = bw.isWritableProperty(propertyName) &&
+                    !PropertyAccessorUtils.isNestedOrIndexedProperty(propertyName);
+            if (convertible) {
+                convertedValue = convertForProperty(resolvedValue, propertyName, bw, converter);
+            }
+            // Possibly store converted value in merged bean definition,
+            // in order to avoid re-conversion for every created bean instance.
+            if (resolvedValue == originalValue) {
+                if (convertible) {
+                    pv.setConvertedValue(convertedValue);
+                }
+                deepCopy.add(pv);
+            }
+            else if (convertible && originalValue instanceof TypedStringValue &&
+                    !((TypedStringValue) originalValue).isDynamic() &&
+                    !(convertedValue instanceof Collection || ObjectUtils.isArray(convertedValue))) {
+                pv.setConvertedValue(convertedValue);
+                deepCopy.add(pv);
+            }
+            else {
+                resolveNecessary = true;
+                deepCopy.add(new PropertyValue(pv, convertedValue));
+            }
+        }
+    }
+    if (mpvs != null && !resolveNecessary) {
+        mpvs.setConverted();
+    }
+
+    // Set our (possibly massaged) deep copy.
+    try {
+        bw.setPropertyValues(new MutablePropertyValues(deepCopy));
+    }
+    catch (BeansException ex) {
+        throw new BeanCreationException(
+                mbd.getResourceDescription(), beanName, "Error setting property values", ex);
+    }
+}
+```
 
 ![](assets/ValueResolver解析依赖bean.png)
 
@@ -1122,3 +1224,9 @@ IRT_ENTRY(void, InterpreterRuntime::_new(JavaThread* thread, ConstantPool* pool,
   thread->set_vm_result(obj);
 IRT_END
 ```
+
+### 38，volatile
+* 使用 volatile
+   修饰共享变量后，每个线程要操作变量时会从主内存中将变量拷贝到本地内存作为副本，当线程操作变量副本并写回主内存后，会通过 CPU 总线嗅探机制告知其他线程该变量副本已经失效，需要重新从主内存中读取。
+* 嗅探机制工作原理
+  每个处理器通过监听在总线上传播的数据来检查自己的缓存值是不是过期了，如果处理器发现自己缓存行对应的内存地址修改，就会将当前处理器的缓存行设置无效状态，当处理器对这个数据进行修改操作的时候，会重新从主内存中把数据读到处理器缓存中。
