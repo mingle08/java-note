@@ -166,6 +166,76 @@ DMA控制器既可以构建在设备控制器里面，也可以作为独立的�
 
 原文链接：https://blog.csdn.net/u010711495/article/details/119075935
 
+### 7，ArrayList扩容机制
+```java
+// java.util.ArrayList
+/**
+  * The size of the ArrayList (the number of elements it contains).
+  *
+  * @serial
+  */
+private int size;
+
+public boolean add(E e) {
+  ensureCapacityInternal(size + 1);  // Increments modCount!!
+  elementData[size++] = e;
+  return true;
+}
+
+// 传入的参数是 size + 1
+private void ensureCapacityInternal(int minCapacity) {
+	ensureExplicitCapacity(calculateCapacity(elementData, minCapacity));
+}
+
+private static int calculateCapacity(Object[] elementData, int minCapacity) {
+	if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
+		return Math.max(DEFAULT_CAPACITY, minCapacity);
+	}
+	return minCapacity;
+}
+
+// 传入的参数是 size + 1
+private void ensureExplicitCapacity(int minCapacity) {
+	modCount++;
+
+	// overflow-conscious code
+  // 传入的参数是 size + 1，而size初始值等于0
+	if (minCapacity - elementData.length > 0)
+		grow(minCapacity);
+}
+
+private void grow(int minCapacity) {
+	// overflow-conscious code
+	int oldCapacity = elementData.length;
+	int newCapacity = oldCapacity + (oldCapacity >> 1);
+	if (newCapacity - minCapacity < 0)
+		newCapacity = minCapacity;
+	if (newCapacity - MAX_ARRAY_SIZE > 0)
+		newCapacity = hugeCapacity(minCapacity);
+	// minCapacity is usually close to size, so this is a win:
+	elementData = Arrays.copyOf(elementData, newCapacity);
+}
+
+private static int hugeCapacity(int minCapacity) {
+	if (minCapacity < 0) // overflow
+		throw new OutOfMemoryError();
+	return (minCapacity > MAX_ARRAY_SIZE) ?
+		Integer.MAX_VALUE :
+		MAX_ARRAY_SIZE;
+}
+
+// java.util.Arrays
+public static <T,U> T[] copyOf(U[] original, int newLength, Class<? extends T[]> newType) {
+	@SuppressWarnings("unchecked")
+	T[] copy = ((Object)newType == (Object)Object[].class)
+		? (T[]) new Object[newLength]
+		: (T[]) Array.newInstance(newType.getComponentType(), newLength);
+	System.arraycopy(original, 0, copy, 0,
+					 Math.min(original.length, newLength));
+	return copy;
+}
+```
+
 ### 8，推荐用自定义的线程池
 
 ```java

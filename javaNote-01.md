@@ -3161,7 +3161,7 @@ https://www.zhangshengrong.com/p/7B1LqVWDaw/
 #### 61，RabbitMQ如何确保消息发送？消息接收？
 
 （1）信道需要设置为confirm模式，则所有在信道上发布的消息都会分配一个唯一ID。
-一旦消息被投递到queue（可持久化的消息需要定稿磁盘），信道会发送一个确诊给生产者（包含消息唯一ID），如果RabbitMQ发生内部错误从而导致消息丢失，会发送一条nack（未确诊）消息给生产者。
+一旦消息被投递到queue（可持久化的消息需要定稿磁盘），信道会发送一个确认给生产者（包含消息唯一ID），如果RabbitMQ发生内部错误从而导致消息丢失，会发送一条nack（未确认）消息给生产者。
 在channel 被设置成Confirm模式之后，所有被publish的后续消息都将被Confirm（即 ack）或者被nack一次。但是没有对消息被Confirm的快慢做任何保证，并且同一条消息不会既被Confirm又被nack。
 （2）消费者(Consumer)的Confirm模式
 为了保证消息从队列可靠地到达消费者，RabbitMQ提供消息确认机制(message acknowledgment)。消费者在声明队列时，可以指定noAck参数，当noAck=false时，RabbitMQ会等待消费者显式发回ack信号后才从内存(和磁盘，如果是持久化消息的话)中移去消息。否则，RabbitMQ会在队列中消息被消费后立即删除它。
