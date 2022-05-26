@@ -35,7 +35,7 @@ apache的dubbo版本从2.7.0开始
 
 ### 2，dubbo服务暴露和服务消费机制
 
-![](assets/2022-04-19-00-12-06-image.png)
+![dubbo服务暴露和消费](assets/2022-04-19-00-12-06-image.png)
 
 ### 3，dubbo协议的魔数
 
@@ -54,7 +54,7 @@ public class ExchangeCodec extends TelnetCodec {
 
 ### 4，dubbo protocol继承图
 
-![](assets/2022-04-19-00-54-16-image.png)
+![dubbo protocol](assets/2022-04-19-00-54-16-image.png)
 
 ### 5，dubbo服务暴露代码分析
 
@@ -75,77 +75,78 @@ export()
 
 ### 6，dubbo的整体架构设计和分层
 
-#### （1）5个角色<br>
+#### （1）5个角色
 
-* 注册中心registry：服务注册与发现<br>
+* 注册中心registry：服务注册与发现
 
-* 服务提供者provider：暴露服务<br>
+* 服务提供者provider：暴露服务
 
-* 服务消费者consumer：调用远程服务<br>
+* 服务消费者consumer：调用远程服务
 
-* 监控中心monitor：统计服务的调用次数和调用时间<br>
+* 监控中心monitor：统计服务的调用次数和调用时间
 
-* 容器container：服务允许容器<br>
+* 容器container：服务允许容器
 
-#### （2）调用流程<br>
+#### （2）调用流程
 
-* container容器负责启动、加载、运行provider<br>
+* container容器负责启动、加载、运行provider
 
-* provider在启动时，向registry中心注册自己提供的服务<br>
+* provider在启动时，向registry中心注册自己提供的服务
 
-* consumer在启动时，向registry中心订阅自己所需的服务<br>
+* consumer在启动时，向registry中心订阅自己所需的服务
 
-* registry返回服务提供者列表给consumer，如果有变更，registry将基于长连接发送变更给consumer<br>
+* registry返回服务提供者列表给consumer，如果有变更，registry将基于长连接发送变更给consumer
 
-* consumer调用provider服务，基于负载均衡算法进行调用<br>
+* consumer调用provider服务，基于负载均衡算法进行调用
 
-* consumer调用provider的统计，基于短连接定时每分钟一次统计到monitor<br>
+* consumer调用provider的统计，基于短连接定时每分钟一次统计到monitor
 
-#### （3）分层<br>
+#### （3）分层
 
-* 接口服务层（Service）：面向开发者、业务代码、接口、实现等<br>
+* 接口服务层（Service）：面向开发者、业务代码、接口、实现等
 
-* 配置层（Config）：对外配置接口，以ServiceConfig与ReferenceConfig为中心<br>
+* 配置层（Config）：对外配置接口，以ServiceConfig与ReferenceConfig为中心
 
-* 服务代理层（Proxy）：对生产者和消费者、dubbo都会产生一个代理类封装调用细节，业务层对调用细节无感<br>
+* 服务代理层（Proxy）：对生产者和消费者、dubbo都会产生一个代理类封装调用细节，业务层对调用细节无感
 
-* 服务注册层（Registry）：封装服务地址的注册与发现，以服务URL为中心<br>
+* 服务注册层（Registry）：封装服务地址的注册与发现，以服务URL为中心
 
-* 路由层（Cluster）：封装多个提供者的路由和负载均衡，并桥接注册中心<br>
+* 路由层（Cluster）：封装多个提供者的路由和负载均衡，并桥接注册中心
 
-* 监控层（Monitor）：RPC调用次数和调用时间监控<br>
+* 监控层（Monitor）：RPC调用次数和调用时间监控
 
-* 远程调用层（Protocol）：封装RPC调用<br>
+* 远程调用层（Protocol）：封装RPC调用
 
-* 信息交换层（Exchange）：封装请求响应模式，同步转异步<br>
+* 信息交换层（Exchange）：封装请求响应模式，同步转异步
 
-* 网络传输层（Transport）：抽象mina和netty为统一接口，统一网络传输接口<br>
+* 网络传输层（Transport）：抽象mina和netty为统一接口，统一网络传输接口
 
-* 数据序列化层（Serialize）：数据传输的序列化和反序列化<br>
+* 数据序列化层（Serialize）：数据传输的序列化和反序列化
 
 ### 7，ZAB协议与RAFT协议的区别
 
-#### （1）ZAB<br>
+#### （1）ZAB
 
-* Leader 一个zookeeper集群同一时刻仅能有一个Leader。Leader负责接收所有的客户端的请求。<br>
-* Follower 提供读服务，参与选举。<br>
-* Observer 仅提供读服务。<br>
+* Leader 一个zookeeper集群同一时刻仅能有一个Leader。Leader负责接收所有的客户端的请求。
+* Follower 提供读服务，参与选举。
+* Observer 仅提供读服务。
 
-#### （2）Raft<br>
+#### （2）Raft
 
-* Leader 负责接收所有的客户端的请求。<br>
-* Follower 读写请求都转发到Leader，参与选举。<br>
-* Candidate 每个节点上都有一个倒计时器 (Election Timeout)，时间随机在 150ms 到 300ms 之间。在一个节点倒计时结束 (Timeout) 后，这个节点的状态变成 Candidate 开始选举，它给其他几个节点发送选举请求 (RequestVote)。选举成功则变为Leader。<br>
+* Leader 负责接收所有的客户端的请求。
+* Follower 读写请求都转发到Leader，参与选举。
+* Candidate 每个节点上都有一个倒计时器 (Election Timeout)，时间随机在 150ms 到 300ms 之间。在一个节点倒计时结束 (Timeout) 后，这个节点的状态变成 Candidate 开始选举，它给其他几个节点发送选举请求 (RequestVote)。选举成功则变为Leader。
 
 ### 8，zookeeper分布式锁
+
 * 节点特性
-    * 节点类型
+  * 节点类型
     PERSISTENT, EPHEMERAL, SEQUENTAIL
-    * 组合可生成4种类型
-        * PERSISTENT：Zookeeper中最常见的一种节点类型
-        * PERSISTENT_SEQUENTIAL：基本特性和持久节点是一致的，额外的特性表现在顺序性上
-        * EPHEMERAL：Zookeeper规定了不能基于临时节点来创建子节点，即临时节点只能作为叶子节点
-        * EPHEMERAL_SEQUENTIAL：可以基于临时顺序节点创建子节点
+  * 组合可生成4种类型
+    * PERSISTENT：Zookeeper中最常见的一种节点类型
+    * PERSISTENT_SEQUENTIAL：基本特性和持久节点是一致的，额外的特性表现在顺序性上
+    * EPHEMERAL：Zookeeper规定了不能基于临时节点来创建子节点，即临时节点只能作为叶子节点
+    * EPHEMERAL_SEQUENTIAL：可以基于临时顺序节点创建子节点
 
 * 排他锁
   * 获取锁
@@ -170,9 +171,9 @@ export()
 
 ### 9，Dubbo SPI
 
-（1）与Java SPI相比，Dubbo SPI做了一定的改进和优化<br>
-a. JDK标准的SPI会一次性实例化扩展点所有实现，如果有扩展实现则初始化很耗时，如果没有用上也加载，则浪费资源<br>
-b. 如果扩展加载失败，则连扩展的名称都获取不到了，加载失败的真正原因被“吃掉”了，报的错并不是真正失败的原因<br>
+（1）与Java SPI相比，Dubbo SPI做了一定的改进和优化
+a. JDK标准的SPI会一次性实例化扩展点所有实现，如果有扩展实现则初始化很耗时，如果没有用上也加载，则浪费资源
+b. 如果扩展加载失败，则连扩展的名称都获取不到了，加载失败的真正原因被“吃掉”了，报的错并不是真正失败的原因
 c. 增加了对扩展IOC和AOP的支持，一个扩展可以直接setter注入其他扩展。在Java SPI使用中，java.util.ServiceLoader
 会一次把某接口下的所有实现庆全部初始化，用户直接调用即可。 Dubbo SPI只是加载配置文件中的类，并分成不同的种类缓存在内存中，而不会立即全部初始化，在性能上有更好的表现。
 
@@ -194,9 +195,9 @@ if (wrapperClasses != null && !wrapperClasses.isEmpty()) {
 
 （2）ExtensionLoader的工作原理
 
-ExtensionLoader的逻辑入口可以分为：<br>
-a. getExtension  获取普通扩展类<br>
-b. getAdaptiveExtension  获取自适应扩展类<br>
+ExtensionLoader的逻辑入口可以分为：
+a. getExtension  获取普通扩展类
+b. getAdaptiveExtension  获取自适应扩展类
 
 ```java
 @SuppressWarnings("unchecked")
@@ -251,7 +252,7 @@ private Class<?> createAdaptiveExtensionClass() {
 }
 ```
 
-c. getActivateExtension  获取自动激活的扩展类<br>
+c. getActivateExtension  获取自动激活的扩展类
 
 （3）扩展点动态编译的实现
 
@@ -329,16 +330,16 @@ public class AdaptiveCompiler implements Compiler {
 
 ### 10，服务的熔断与降级
 
-https://www.jianshu.com/p/98e8cfbf1b12
+<https://www.jianshu.com/p/98e8cfbf1b12>
 
-（1）限流<br>
-限流是从用户访问压力的角度来考虑如何应对系统故障。<br>
-限流为了对服务端的接口接受请求的频率进行限制，防止服务挂掉。比如某一接口的请求限制为 100 个每秒, 对超过限制的请求放弃处理或者放到队列中等待处理。限流可以有效应对突发请求过多。相关阅读：限流算法有哪些？<br>
-（2）降级<br>
-服务降级：作用在消费者<br>
-所谓降级，就是一般是从整体符合考虑，就是当某个服务熔断之后，服务器将不再被调用，此刻客户端可以自己准备一个本地的fallback回调，返回一个缺省值，这样做，虽然服务水平下降，但好歹可用，比直接挂掉要强。<br>
-(3)熔断<br>
-服务熔断（防止服务雪崩）:作用在服务提供者<br>
+（1）限流
+限流是从用户访问压力的角度来考虑如何应对系统故障。
+限流为了对服务端的接口接受请求的频率进行限制，防止服务挂掉。比如某一接口的请求限制为 100 个每秒, 对超过限制的请求放弃处理或者放到队列中等待处理。限流可以有效应对突发请求过多。相关阅读：限流算法有哪些？
+（2）降级
+服务降级：作用在消费者
+所谓降级，就是一般是从整体符合考虑，就是当某个服务熔断之后，服务器将不再被调用，此刻客户端可以自己准备一个本地的fallback回调，返回一个缺省值，这样做，虽然服务水平下降，但好歹可用，比直接挂掉要强。
+(3)熔断
+服务熔断（防止服务雪崩）:作用在服务提供者
 当链路的某个微服务不可用或者响应时间太长时，会进行服务的降级，进而熔断该节点微服务的调用，快速返回“错误”的响应信息。当检测到该节点微服务响应正常后恢复调用链
 
 ### 11，RabbitMQ如何确保消息发送？消息接收？

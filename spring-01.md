@@ -243,7 +243,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 看一下PostProcessor的调用关系：
 
-![](assets/postProcessor的调用关系.png)
+![postProcessors](assets/postProcessor的调用关系.png)
 
 ```java
 // CommonAnnotationBeanPostProcessor.java的部分注释
@@ -268,13 +268,14 @@ with no special requirements other than the type having to match.
 
 */
 ```
+
 ### 2，BeanFactory与FactoryBean
 
-（1）BeanFactory 是接口，提供了IOC容器最基本的形式，给具体的IOC容器的实现提供了规范，功能非常复杂。<br>
+（1）BeanFactory 是接口，提供了IOC容器最基本的形式，给具体的IOC容器的实现提供了规范，功能非常复杂。
 （2）FactoryBean 也是接口，为IOC容器中Bean的实现提供了更加灵活的方式，FactoryBean在IOC容器的基础上给Bean的实现加上了一个简单的
-工厂模式和装饰模式 ，我们可以在getObject()方法中灵活配置.<br>
-如果我们想要编写一些比较复杂点儿的逻辑就会触及到其他一些不必要的接口，或者只是想简单的去构造Bean，不希望实现IOC容器原有的大量方法，这时候就可以使用FactoryBean<br>
-（3）FactoryBean的实际应用<br>
+工厂模式和装饰模式 ，我们可以在getObject()方法中灵活配置.
+如果我们想要编写一些比较复杂点儿的逻辑就会触及到其他一些不必要的接口，或者只是想简单的去构造Bean，不希望实现IOC容器原有的大量方法，这时候就可以使用FactoryBean
+（3）FactoryBean的实际应用
 a. 使用MyBatis时就用到了FactoryBean
 
 ```xml
@@ -324,7 +325,7 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
 }
 ```
 
-    b. quartz定时器
+b. quartz定时器
 
 ```java
 package org.springframework.scheduling.quartz;
@@ -429,12 +430,12 @@ int TRANSACTION_SERIALIZABLE     = 8;
 
 ### 4，Spring事务什么时候会失效
 
-Spring事务的原理是AOP，进行了切面增强，那么失效的根本原因就是这个AOP不起作用了。常见情况有以下几种：<br>
-（1）自调用<br>
-类里面使用this调用本类的方法（this通常省略），此时这个this对象不是代理类，而是对象本身<br>
-解决方法有二种:<br>
-a. 使用代理类调用该方法<br>
-b. <aop:aspectj-autoproxy expose-proxy=“true”> ，设置expose-proxy属性为true，将代理暴露出来，使用AopContext.currentProxy()获取当前代理，将this.b()改为((UserService)AopContext.currentProxy()).b()<br>
+Spring事务的原理是AOP，进行了切面增强，那么失效的根本原因就是这个AOP不起作用了。常见情况有以下几种：
+（1）自调用
+类里面使用this调用本类的方法（this通常省略），此时这个this对象不是代理类，而是对象本身
+解决方法有二种:
+a. 使用代理类调用该方法
+b. <aop:aspectj-autoproxy expose-proxy=“true”> ，设置expose-proxy属性为true，将代理暴露出来，使用AopContext.currentProxy()获取当前代理，将this.b()改为((UserService)AopContext.currentProxy()).b()
 AopContext.currentProxy()的本质是使用ThreadLocal保存代理对象
 
 ```java
@@ -471,16 +472,17 @@ public abstract class AopContext {
 }
 ```
 
-（2）方法不是public<br>
-@Transactional只能用于public方法上，否则事务不会生效，如果偏要用在非public方法上，可以开启AspectJ代理模式<br>
-（3）数据库不支持事务<br>
-（4）没有被Spring管理<br>
-（5）异常被吃掉，事务不会回滚（或者抛出的异常没有被定义，默认为RuntimeException）<br>
+（2）方法不是public
+@Transactional只能用于public方法上，否则事务不会生效，如果偏要用在非public方法上，可以开启AspectJ代理模式
+（3）数据库不支持事务
+（4）没有被Spring管理
+（5）异常被吃掉，事务不会回滚（或者抛出的异常没有被定义，默认为RuntimeException）
 
 ### 5，Spring三级缓存
-* singletonObjects 一级缓存，用于保存实例化、注入、初始化完成的bean实例<br>
-* earlySingletonObjects 二级缓存，用于保存实例化完成的bean实例<br>
-* singletonFactories 三级缓存，用于保存bean创建工厂，以便于后面扩展有机会创建代理对象。<br>
+
+* singletonObjects 一级缓存，用于保存实例化、注入、初始化完成的bean实例
+* earlySingletonObjects 二级缓存，用于保存实例化完成的bean实例
+* singletonFactories 三级缓存，用于保存bean创建工厂，以便于后面扩展有机会创建代理对象。
 
 摘自博客：[spring: 我是如何解决循环依赖的？ - Mars独行侠 - 博客园 (cnblogs.com)](https://www.cnblogs.com/wjxzs/p/14239052.html)
 
@@ -750,51 +752,51 @@ Use the DI style that makes the most sense for a particular class. Sometimes, wh
 
 ### 9，Spring启动流程
 
-（1）在创建Spring容器，即启动Spring时：<br>
-a. 扫描xml文件，得到所有的BeanDefinition对象，并保存在一个Map中<br>
-b. 筛选出非懒加载的单例BeanDefinition进行创建，对于多例不需要在启动过程中创建，会在每次获取Bean时利用BeanDefinition创建<br>
-c. 利用BeanDefinition创建Bean就是Bean的创建的生命周期，这过程包括了合并BeanDefinition、推断构造方法、实例化、属性填充、初始化前、初始化、初始化后等步骤，其中AOP就是改重在初始化后这一步骤中<br>
-（2）单例Bean创建完成之后，Spring会发布一个容器启动事件<br>
-（3）Spring启动结束<br>
+（1）在创建Spring容器，即启动Spring时：
+a. 扫描xml文件，得到所有的BeanDefinition对象，并保存在一个Map中
+b. 筛选出非懒加载的单例BeanDefinition进行创建，对于多例不需要在启动过程中创建，会在每次获取Bean时利用BeanDefinition创建
+c. 利用BeanDefinition创建Bean就是Bean的创建的生命周期，这过程包括了合并BeanDefinition、推断构造方法、实例化、属性填充、初始化前、初始化、初始化后等步骤，其中AOP就是改重在初始化后这一步骤中
+（2）单例Bean创建完成之后，Spring会发布一个容器启动事件
+（3）Spring启动结束
 
 ### 10，Spring源码阅读
 
-1. Spring的核心类介绍<br>
-   1.1  DefaultListableBeanFactory<br>
+#### Spring的核心类介绍
+* DefaultListableBeanFactory
 
 ![img_4.png](assets/img_4_BeanFactory.png)
 
-AliasRegistry  定义对alias的简单增删改等操作<br>
-SimpleAliasRegistry  主要使用map作为alias的缓存，并对接口AliasRegistry进行实现<br>
-SingletonBeanRegistry  定义对单例的注册及获取<br>
-BeanFactory  定义获取bean及bean的各种属性<br>
-DefaultSingletonBeanRegistry  对接口SingletonBeanRegistry各函数的实现<br>
-HierarchicalBeanFactory  继承BeanFactory，也就是在BeanFactory定义的功能的基础上增加了对parentFactory的支持<br>
-BeanDefinitionRegistry 定义对BeanDefinition的各种增删改操作<br>
-FactoryBeanRegistrySupport  在DefaultSingletonBeanRegistry基础上增加了对FactoryBean的特殊处理功能<br>
-ConfigurableBeanFactory  提供配置Factory的各种办法<br>
-ListableBeanFactory  根据各种条件获取bean的配置清单<br>
-AbstractBeanFactory  综合FactoryBeanRegistrySupport和ConfigurableBeanFactory的功能<br>
-AutowireCapableBeanFactory  提供创建bean、自动注入、初始化以及应用bean的后处理器<br>
-AbstractAutowireCapableBeanFactory  综合AbstractBeanFactory并对接口AutowireCapableBeanFactory进行实现<br>
-ConfigurableListableBeanFactory  BeanFactory配置清单，指定忽略糊弄及接口等<br>
-DefaultListableBeanFactory  综合上面所有功能，主要是对bean注册后的处理<br>
+AliasRegistry  定义对alias的简单增删改等操作
+SimpleAliasRegistry  主要使用map作为alias的缓存，并对接口AliasRegistry进行实现
+SingletonBeanRegistry  定义对单例的注册及获取
+BeanFactory  定义获取bean及bean的各种属性
+DefaultSingletonBeanRegistry  对接口SingletonBeanRegistry各函数的实现
+HierarchicalBeanFactory  继承BeanFactory，也就是在BeanFactory定义的功能的基础上增加了对parentFactory的支持
+BeanDefinitionRegistry 定义对BeanDefinition的各种增删改操作
+FactoryBeanRegistrySupport  在DefaultSingletonBeanRegistry基础上增加了对FactoryBean的特殊处理功能
+ConfigurableBeanFactory  提供配置Factory的各种办法
+ListableBeanFactory  根据各种条件获取bean的配置清单
+AbstractBeanFactory  综合FactoryBeanRegistrySupport和ConfigurableBeanFactory的功能
+AutowireCapableBeanFactory  提供创建bean、自动注入、初始化以及应用bean的后处理器
+AbstractAutowireCapableBeanFactory  综合AbstractBeanFactory并对接口AutowireCapableBeanFactory进行实现
+ConfigurableListableBeanFactory  BeanFactory配置清单，指定忽略糊弄及接口等
+DefaultListableBeanFactory  综合上面所有功能，主要是对bean注册后的处理
 
-1.2  XmlBeanDefinitionReader
+* XmlBeanDefinitionReader
 
 ![img_5.png](assets/img_5_XmlBeanDefinitionReader类.png)
 
-ResourceLoader  定义资源加载器，主要应用于根据给定的资源文件地址返回对应的Resource<br>
-BeanDefinitionReader  主要定义资源文件读取并置换为BeanDefinition的各个功能<br>
-EnvironmentCapable  定义获取Environment方法<br>
-DocumentLoader  定义从资源文件加载到置换为Document的功能<br>
-AbstractBeanDefinitionReader  对EnvironmentCapable、BeanDefinitionReader类定义的功能进行实现<br>
-BeanDefinitionDocumentReader  定义读取Document并注册BeanDefinition功能<br>
-BeanDefinitionParserDelegate  定义解析Element的各种方法<br>
+ResourceLoader  定义资源加载器，主要应用于根据给定的资源文件地址返回对应的Resource
+BeanDefinitionReader  主要定义资源文件读取并置换为BeanDefinition的各个功能
+EnvironmentCapable  定义获取Environment方法
+DocumentLoader  定义从资源文件加载到置换为Document的功能
+AbstractBeanDefinitionReader  对EnvironmentCapable、BeanDefinitionReader类定义的功能进行实现
+BeanDefinitionDocumentReader  定义读取Document并注册BeanDefinition功能
+BeanDefinitionParserDelegate  定义解析Element的各种方法
 
-2. 容器的基础XmlBeanFactory
+* 容器的基础XmlBeanFactory
 
-2.1  配置文件的封装
+  * 配置文件的封装
 
 ![img_6.png](assets/img_6_resource类.png)
 
@@ -826,10 +828,10 @@ BeanDefinitionParserDelegate  定义解析Element的各种方法<br>
 ```
 
 ignoreDependencyInterface方法的主要是忽略给定接口的自动装配功能，那么这样做的目的是什么？
-举例来说，当A中有属性B，那么当Spring在获取A的Bean的时候如果其属性B还没初始化，那么Spring会自动初始化B。但是，某些情况下，B不会被初始化，其中的一种情况就是B实现了BeanNameAware接口。<br>
-Spring中是这样介绍的：自动装配时忽略给定的接口依赖，典型应用是通过其他方式解析Application上下文注册依赖，类似于BeanFactory通过BeanFactoryAware进行注入或者ApplicationContext通过ApplicationContextAware进行注入<br>
+举例来说，当A中有属性B，那么当Spring在获取A的Bean的时候如果其属性B还没初始化，那么Spring会自动初始化B。但是，某些情况下，B不会被初始化，其中的一种情况就是B实现了BeanNameAware接口。
+Spring中是这样介绍的：自动装配时忽略给定的接口依赖，典型应用是通过其他方式解析Application上下文注册依赖，类似于BeanFactory通过BeanFactoryAware进行注入或者ApplicationContext通过ApplicationContextAware进行注入
 
-2.2  加载Bean
+  * 加载Bean
 
 ```java
 public class XmlBeanFactory extends DefaultListableBeanFactory {
@@ -950,12 +952,12 @@ InputSource，EntityResolver都在jdk中
 
 ### 11，Spring事务怎么实现回滚
 
-（1）Spring的事务管理是如何实现的<br>
-总述：Spring事务是由AOP实现的，首先要生成具体的代理对象，然后按照AOP的整套流程来执行具体的操作逻辑，正常情况下要通过通知来完成核心功能，但是事务不是通过通知来实现的，而是通过TransactionInterceptor来实现的，通过调用invoke方法来实现具体的逻辑<br>
-分述：a. 先做准备工作，解析各个方法上事务相关的属性，根据具体的属性来判断是否开启新事务<br>
-    b. 当需要开启的时候，获取数据库连接，关闭自动提交功能，开启事务<br>
-    c. 执行具体的sql逻辑操作<br>
-    d. 在操作过程中，如果执行失败了，那么会通过completeTransactionAfterThrowing方法回滚，回滚的逻辑是通过doRollBack方法来实现，也是先获取数据库连接对象，通过连接对象回滚<br>
+（1）Spring的事务管理是如何实现的
+总述：Spring事务是由AOP实现的，首先要生成具体的代理对象，然后按照AOP的整套流程来执行具体的操作逻辑，正常情况下要通过通知来完成核心功能，但是事务不是通过通知来实现的，而是通过TransactionInterceptor来实现的，通过调用invoke方法来实现具体的逻辑
+分述：a. 先做准备工作，解析各个方法上事务相关的属性，根据具体的属性来判断是否开启新事务
+    b. 当需要开启的时候，获取数据库连接，关闭自动提交功能，开启事务
+    c. 执行具体的sql逻辑操作
+    d. 在操作过程中，如果执行失败了，那么会通过completeTransactionAfterThrowing方法回滚，回滚的逻辑是通过doRollBack方法来实现，也是先获取数据库连接对象，通过连接对象回滚
 e. 回滚之后，要清除相关的事务信息：cleanupTransactionInfo
 f. 如果没有发生异常，则执行commitTransactionAfterReturning方法，完成事务的提交，提交的逻辑是通过doCommit来实现：先获取数据库连接对象，通过连接对象提交
 
@@ -998,8 +1000,8 @@ protected void parseBeanDefinitions(Element root, BeanDefinitionParserDelegate d
 ```java
 // org/springframework/beans/factory/xml/BeanDefinitionParserDelegate.java
 public BeanDefinition parseCustomElement(Element ele) {
-		return parseCustomElement(ele, null);
-	}
+  return parseCustomElement(ele, null);
+ }
 
 public BeanDefinition parseCustomElement(Element ele, BeanDefinition containingBd) {
     String namespaceUri = getNamespaceURI(ele);
@@ -1087,16 +1089,16 @@ private static class AopAutoProxyConfigurer {
 // @Transactional注解在哪里被解析
 public class SpringTransactionAnnotationParser implements TransactionAnnotationParser, Serializable {
 
-	@Override
-	public TransactionAttribute parseTransactionAnnotation(AnnotatedElement ae) {
-		AnnotationAttributes attributes = AnnotatedElementUtils.getMergedAnnotationAttributes(ae, Transactional.class);
-		if (attributes != null) {
-			return parseTransactionAnnotation(attributes);
-		}
-		else {
-			return null;
-		}
-	}
+ @Override
+ public TransactionAttribute parseTransactionAnnotation(AnnotatedElement ae) {
+  AnnotationAttributes attributes = AnnotatedElementUtils.getMergedAnnotationAttributes(ae, Transactional.class);
+  if (attributes != null) {
+   return parseTransactionAnnotation(attributes);
+  }
+  else {
+   return null;
+  }
+ }
 
     ......
 }
@@ -1233,7 +1235,7 @@ protected List<Advisor> findEligibleAdvisors(Class<?> beanClass, String beanName
 }
 
 protected List<Advisor> findAdvisorsThatCanApply(
-			List<Advisor> candidateAdvisors, Class<?> beanClass, String beanName) {
+   List<Advisor> candidateAdvisors, Class<?> beanClass, String beanName) {
 
     ProxyCreationContext.setCurrentProxiedBeanName(beanName);
     try {
@@ -1742,36 +1744,37 @@ int TRANSACTION_READ_COMMITTED   = 2;
 int TRANSACTION_REPEATABLE_READ  = 4;
 
 int TRANSACTION_SERIALIZABLE     = 8;
+```
 
 ### 95，spring源码编译，版本号：4.3.18
 
 * 命令：./gradlew :spring-oxm:compileTestJava  编译成功
 
-![](assets/spring编译成功.png)
+![spring编译成功](assets/spring编译成功.png)
 
 * sync 成功
 
-![](assets/gradle按钮-编译成功.png)
+![gradle按钮](assets/gradle按钮-编译成功.png)
 
 ### 96，调试循环依赖
 
 （1）配置文件和依赖bean的准备
 
-![](assets/xml配置循环依赖bean.png)
+![xml配置循环依赖](assets/xml配置循环依赖bean.png)
 
-![](assets/依赖bean的java代码.png)
+![依赖bean的java代码](assets/依赖bean的java代码.png)
 
 Class B的内容类似A，这里省略。
 
 （2）开始调试，一直进入到refresh()方法 --> finishBeanFactoryInitialization --> preInstantiateSingletons()方法
 
-![](assets/进入preInstantiateSingletons方法.png)
+![preInstantiateSingletons](assets/进入preInstantiateSingletons方法.png)
 
 可以看到，要实例化的beanNames有2个，就是我们想要的a和b。
 
 首先是处理a，重点关注bd即beanDefinition中的propertyValues，可以看到在propertyValuesList只有一个元素：属性b，name是b，value是一个RuntimeBeanReference对象，属性beanName为b。
 
-![](assets/RuntimeBeanReference存入.png)
+![RuntimeBeanReference存入](assets/RuntimeBeanReference存入.png)
 
 这是在什么时候保存的？答案是在beanDefinition解析阶段，有一个处理步骤是解析property子元素：parsePropertyElements(ele, bd)，在此方法中，比如解析xml中的a的属性b，会把property标签中的ref="b"保存为RuntimeBeanReference，源码如下：
 
@@ -1864,13 +1867,14 @@ public Object parsePropertyValue(Element ele, BeanDefinition bd, String property
 
 然后一路跟进populateBean方法，F7进入方法：
 
-![](assets/populateBean方法.png)
+![populateBean](assets/populateBean方法.png)
 
 看到autowireMode的值是0，不会走这个if分支：
 
-![](assets/autowireMode为0.png)
+![autowireMode](assets/autowireMode为0.png)
 
 重点是applyPropertyValues方法，按F7进入，来到resolveValueIfNecessary方法。
+
 ```java
 // org/springframework/beans/factory/support/AbstractAutowireCapableBeanFactory.java
 protected void applyPropertyValues(String beanName, BeanDefinition mbd, BeanWrapper bw, PropertyValues pvs) {
@@ -1963,7 +1967,7 @@ protected void applyPropertyValues(String beanName, BeanDefinition mbd, BeanWrap
 }
 ```
 
-![](assets/ValueResolver解析依赖bean.png)
+![ValueResolver解析依赖bean](assets/ValueResolver解析依赖bean.png)
 
 进入valueResolver的resolveValueIfNecessary方法，来到第一个分支，进入resolveReference方法，发现依赖bean（此处是b）是在这里创建的，熟悉的beanFactory.getBean()方法。
 
@@ -2022,23 +2026,23 @@ private Object resolveReference(Object argName, RuntimeBeanReference ref) {
 
 同样的，创建b时发现bd中propertyValues存放的a的value也是RuntimeBeanReference类型。
 
-![](assets/创建b时发现b依赖a.png)
+![创建b时发现b依赖a](assets/创建b时发现b依赖a.png)
 
 创建完成之后，a中有b，b中有a，循环往复：
 
-![](assets/循环依赖的效果展示.png)
+![循环依赖的效果展示](assets/循环依赖的效果展示.png)
 
 一直按F8之后，回到这里：
 
-![](assets/回到preInstantiateSingletons方法.png)
+![回到preInstantiateSingleton方法](assets/回到preInstantiateSingletons方法.png)
 
 因为以上所有的操作，都是这个循环开始处理beanName为a的情况，处理完之后回到这里，开始处理beanName为b的情况。
 
-![](assets/遍历到第二个beanName，即b.png)
+![遍历到第二个beanName](assets/遍历到第二个beanName，即b.png)
 
 完成之后，可以看到缓存的情况：
 
-![](assets/查看一级缓存中的单例.png)
+![查看一级缓存中的单例](assets/查看一级缓存中的单例.png)
 
 ### 13，SpringMVC的九大组件
 
@@ -2051,8 +2055,6 @@ private Object resolveReference(Object argName, RuntimeBeanReference ref) {
 * requestToViewName解析器
 * 视图解析器
 * FlashMap解析器：flashMap主要用在redirect中传递参数
-
-
 
 ### 14，springboot自动装配
 

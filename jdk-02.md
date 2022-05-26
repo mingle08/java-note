@@ -176,7 +176,7 @@ ring0是指CPU的运行级别，ring0是最高级别，ring1次之，ring2更次
 
   * DMA控制器既可以构建在设备控制器里面，也可以作为独立的实体挂在计算机主板上。而以独立形式存在的DMA控制器更为常见。
 
-原文链接：https://blog.csdn.net/u010711495/article/details/119075935
+原文链接：<https://blog.csdn.net/u010711495/article/details/119075935>
 
 ### 36，推荐用自定义的线程池
 
@@ -341,7 +341,7 @@ public static void gc() {
 
 1，ParameterizedType
 
-```
+```java
 Set<String> set;
 Class<Integer> clazz;
 MyClass<String> myClass;
@@ -353,7 +353,7 @@ class MyClass<V>{
 
 2，TypeVariable
 
-```
+```java
 <T extends KnownType-1 & KnownType-2>
 
 public interface TypeVariable<D extends GenericDeclaration> extends Type {
@@ -375,13 +375,13 @@ public interface TypeVariable<D extends GenericDeclaration> extends Type {
 
 3，WildcardType
 
-```
+```java
 <? extends Number>
 ```
 
 4，GenericArrayType
 
-```
+```java
 List<String>[] listArray; //是GenericArrayType,元素是List<String>类型，也就是ParameterizedType类型
 
 T[] tArray; //是GenericArrayType,元素是T类型，也就是TypeVariable类型
@@ -504,7 +504,6 @@ IRT_END
 * 嗅探机制工作原理
   每个处理器通过监听在总线上传播的数据来检查自己的缓存值是不是过期了，如果处理器发现自己缓存行对应的内存地址修改，就会将当前处理器的缓存行设置无效状态，当处理器对这个数据进行修改操作的时候，会重新从主内存中把数据读到处理器缓存中。
 
-
 ### 50，生产环境，cpu占用过高怎么排查？
 
 * （1）top命令查看进程id
@@ -582,7 +581,7 @@ private static int ctlOf(int rs, int wc) {
 
 ### 52，ThreadPoolExecutor的execute方法
 
-![](assets/ThreadPoolExecutor%E5%86%85%E9%83%A8%E7%B1%BB.png)
+![ThreadPoolExecutor](assets/ThreadPoolExecutor%E5%86%85%E9%83%A8%E7%B1%BB.png)
 
 ```java
 // execute方法

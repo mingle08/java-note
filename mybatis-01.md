@@ -48,9 +48,9 @@ public BoundSql getBoundSql(Object parameterObject) {
 }
 ```
 
-![](assets/MixedSqlSource.png)
+![MixedSqlSource](assets/MixedSqlSource.png)
 
-![](assets/2022-05-07-15-57-50-image.png)
+![MixedSqlSource debug](assets/2022-05-07-15-57-50-image.png)
 
 ```java
 // 进入rootSqlNode.apply方法,来到MixedSqlNode
@@ -95,19 +95,20 @@ public class StaticTextSqlNode implements SqlNode {
 
 }
 ```
-![](assets/2022-05-07-16-12-22-1651911072(1).jpg)
+
+![contents](assets/2022-05-07-16-12-22-1651911072(1).jpg)
 
 contents中是把mybatis中的sql解析成11个片段。执行完apply方法之后，context中的sqlBuilder的value如下：${}已经被解析，而#{}还没有解析。
 
-![](assets/$符被替换.png)
+![$符被替换](assets/$符被替换.png)
 
 ${}符号在哪儿被替换的？是在IfSqlNode中替换的：
 
-![](assets/IfSqlNode.png)
+![IfSqlNode](assets/IfSqlNode.png)
 
 按F7跳转到TextSqlNode，在GenericTokenParser中完成替换。
 
-![](assets/TextSqlNode.png)
+![TextSqlNode](assets/TextSqlNode.png)
 
 ```java
 // 进入parse方法，来到SqlSourceBuilder类
@@ -119,7 +120,7 @@ public SqlSource parse(String originalSql, Class<?> parameterType, Map<String, O
 }
 ```
 
-![](assets/sharp符号被替换.png)
+![#被替换](assets/sharp符号被替换.png)
 
 解析之后，#{}变成了问号。进入下一行的sqlSource.getBoundSql方法：
 
@@ -144,7 +145,7 @@ public BoundSql getBoundSql(Object parameterObject) {
 }
 ```
 
-![](assets/StaticSqlSource.png)
+![StaticSqlSource](assets/StaticSqlSource.png)
 
 ```java
 // 最后来到BaseExecutor
@@ -179,11 +180,11 @@ public <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBoun
 }
 ```
 
-![](assets/SimpleExecutor.png)
+![SimpleExecuter](assets/SimpleExecutor.png)
 
 最终走到PreparedStatementHandler类
 
-![](assets/PreparedStatementHandler.png)
+![PreparedStatementHandler](assets/PreparedStatementHandler.png)
 
 ### 2，resultMap对于联合主键怎么写
 

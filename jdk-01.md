@@ -4,7 +4,7 @@
 
 ### 1，CountDownLatch与CyclicBarrier的区别
 
-(1) CountDownLatch适用于所有线程通过某一点后通知方法,而CyclicBarrier则适合让所有线程在同一点同时执行<br>
+(1) CountDownLatch适用于所有线程通过某一点后通知方法,而CyclicBarrier则适合让所有线程在同一点同时执行
 (2) CountDownLatch利用继承AQS的共享锁来进行线程的通知,利用CAS来进行--,而CyclicBarrier则利用ReentrantLock的Condition来阻塞和通知线程
 
 ```java
@@ -198,7 +198,7 @@ public static <T,U> T[] copyOf(U[] original, int newLength, Class<? extends T[]>
 
 ### 4，HashMap中能保证元素有序的是哪个Map？
 
-怎么保证有序？<br>
+怎么保证有序？
 查看源码，我们也会发现，linkedHashMap只是维护了一个链表Entry，并没有put、remove方法的具体实现。
 
 ```java
@@ -227,7 +227,7 @@ public static <T,U> T[] copyOf(U[] original, int newLength, Class<? extends T[]>
 final boolean accessOrder;
 ```
 
-添加元素要调用父类的put方法：<br>
+添加元素要调用父类的put方法：
 而linkedHashMap重写了newNode方法：
 
 ```java
@@ -478,7 +478,7 @@ if (hiTail != null) {
 
 ### 7，Happens-Before规则
 
-（1）oracle官方文档：[Threads and Locks](https://docs.oracle.com/javase/specs/jls/se6/html/memory.html) <br>
+（1）oracle官方文档：[Threads and Locks](https://docs.oracle.com/javase/specs/jls/se6/html/memory.html) 
 （2）文档关于Happens-Before内容
 
 ```
@@ -545,17 +545,17 @@ public static int hashCode(boolean value) {
 
 ### 9，死锁
 
-（1）产生死锁必须具备以下四个条件：<br>
-a. 互斥条件：该资源任意一个时刻只由一个线程占用。<br>
-b. 请求与保持条件：一个进程因请求资源而阻塞时，对已获得的资源保持不放。<br>
-c. 不剥夺条件:线程已获得的资源在未使用完之前不能被其他线程强行剥夺，只有自己使用完毕后才释放资源。<br>
-d. 循环等待条件:若干进程之间形成一种头尾相接的循环等待资源关系。<br>
+（1）产生死锁必须具备以下四个条件：
+a. 互斥条件：该资源任意一个时刻只由一个线程占用。
+b. 请求与保持条件：一个进程因请求资源而阻塞时，对已获得的资源保持不放。
+c. 不剥夺条件:线程已获得的资源在未使用完之前不能被其他线程强行剥夺，只有自己使用完毕后才释放资源。
+d. 循环等待条件:若干进程之间形成一种头尾相接的循环等待资源关系。
 
-（2）为了避免死锁，我们只要破坏产生死锁的四个条件中的其中一个就可以了。现在我们来挨个分析一下：<br>
-a. **破坏互斥条件** ：这个条件我们没有办法破坏，因为我们用锁本来就是想让他们互斥的（临界资源需要互斥访问）。<br>
-b. **破坏请求与保持条件** ：一次性申请所有的资源。<br>
-c. **破坏不剥夺条件** ：占用部分资源的线程进一步申请其他资源时，如果申请不到，可以主动释放它占有的资源。<br>
-d. **破坏循环等待条件** ：依靠按序申请资源来预防。按某一顺序申请资源，释放资源则反序释放。破坏循环等待条件。<br>
+（2）为了避免死锁，我们只要破坏产生死锁的四个条件中的其中一个就可以了。现在我们来挨个分析一下：
+a. **破坏互斥条件** ：这个条件我们没有办法破坏，因为我们用锁本来就是想让他们互斥的（临界资源需要互斥访问）。
+b. **破坏请求与保持条件** ：一次性申请所有的资源。
+c. **破坏不剥夺条件** ：占用部分资源的线程进一步申请其他资源时，如果申请不到，可以主动释放它占有的资源。
+d. **破坏循环等待条件** ：依靠按序申请资源来预防。按某一顺序申请资源，释放资源则反序释放。破坏循环等待条件。
 
 
 
@@ -714,21 +714,21 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
 ### 13，双亲委派模型
 
-（1）三层类加载器<br>
-a. 启动类加载器（Bootstrap Class Loader）：<br>
-无父类加载器<br>
-加载范围：存放在<JAVA_HOME>\lib目录，或者被-Xbootclasspath参数所指定的路径中存放的，而且是Java虚拟机能够识别的类库<br>
-b. 扩展类加载器（Extension Class Loader）：<br>
-父类加载器就是Bootstrap Class Loader<br>
-加载范围：存放在<JAVA_HOME>\lib\ext目录，或者被java.ext.dirs系统变量所指定的路径中所有的类库<br>
-c. 应用程序类加载器（Application Class Loader）：<br>
-父类加载器就是Extension Class Loader<br>
-加载范围：用户类路径（ClassPath）上所有的类库<br>
+（1）三层类加载器
+a. 启动类加载器（Bootstrap Class Loader）：
+无父类加载器
+加载范围：存放在<JAVA_HOME>\lib目录，或者被-Xbootclasspath参数所指定的路径中存放的，而且是Java虚拟机能够识别的类库
+b. 扩展类加载器（Extension Class Loader）：
+父类加载器就是Bootstrap Class Loader
+加载范围：存放在<JAVA_HOME>\lib\ext目录，或者被java.ext.dirs系统变量所指定的路径中所有的类库
+c. 应用程序类加载器（Application Class Loader）：
+父类加载器就是Extension Class Loader
+加载范围：用户类路径（ClassPath）上所有的类库
 
-（2）工作过程<br>
-如果一个类加载器收到了类加载的请求，它首先不会自己去尝试加载这个类，而是把这个请求委派给父类加载器去完成，每一个层次的类加载器都是如此，因此所有的加载请求最终都应该传送到最顶层的启动类加载器中，只有当父加载器反馈自己无法完成这个加载请求（它的搜索范围中没有找到所需要的类）时，子加载器才会尝试自己去完成加载<br>
-（3）破坏双亲委派模型<br>
-a. JDK1.2以前<br>
+（2）工作过程
+如果一个类加载器收到了类加载的请求，它首先不会自己去尝试加载这个类，而是把这个请求委派给父类加载器去完成，每一个层次的类加载器都是如此，因此所有的加载请求最终都应该传送到最顶层的启动类加载器中，只有当父加载器反馈自己无法完成这个加载请求（它的搜索范围中没有找到所需要的类）时，子加载器才会尝试自己去完成加载
+（3）破坏双亲委派模型
+a. JDK1.2以前
 双亲委派模型是JDK1.2之后才引入的，已有的代码有很多重写ClassLoader中的loadClass()方法，而双亲委派的具体逻辑就在这个loadClass()方法里，所以Java设计者们引入双亲委派模型时不得不做出一些妥协，为了兼容这些已有代码，无法再以技术手段避免loadClass()被子类覆盖的可能性，只能在JDK1.2之后的java.lang.ClassLoader中添加一个新的protected方法findClass()，并引导用户编写的类加载逻辑时尽可能去重写这个方法，而不是在loadClass()中编写代码。
 
 ```java
@@ -779,7 +779,7 @@ protected Class<?> findClass(String name) throws ClassNotFoundException {
     }
 ```
 
-b. Java SPI服务<br>
+b. Java SPI服务
 比如JNDI、JDBC等的实现类是由不同厂商实现并部署在应该程序的ClassPath下的。解决方法：引入线程上下文类加载器（Thread Context ClassLoader）。这个类加载器可以通过java.lang.Thread类的setContextClassLoader()方法进行设置，如果创建线程时还未设置，它将会从父线程中继承一个，如果在应用程序的全局范围内都没有设置过的话，那这个类加载器默认就是应用程序类加载器。
 
 ```java
@@ -1034,7 +1034,7 @@ static class HashMapSpliterator<K,V> {
 }
 ```
 
-（2）fail-safe ( 安全失败 )<br>
+（2）fail-safe ( 安全失败 )
 java.util.concurrent包下的容器都是安全失败的，可以在多线程下并发使用，并发修改。常见的的使用fail-safe方式遍历的容器有ConcerrentHashMap和CopyOnWriteArrayList等。采用安全失败机制的集合容器，在遍历时不是直接在集合内容上访问，而是先copy原有集合内容，在copy的新集合上进行遍历，所以在遍历过程中对原集合所作的修改并不能被迭代器检测到，所以不会触发ConcurrentModificationException
 
 ### 18，ThreadLocal与SimpleDateFormat
@@ -1049,9 +1049,9 @@ protected T initialValue() {
 ```
 
 ThreadLocal内存泄露的根源，由于ThreadLocalMap的生命周期跟Thread一样长，如果没有手动删除对应的key，就会导致内存泄露，而不是因为弱引用
-ThreadLocal正确的使用方法：<br>
-（1）每次使用完ThreadLocal都手动调用remove()方法清除数据；<br>
-（2）将ThreadLocal变量定义成private static，这样就一直存在ThreadLocal强引用，也就能保证任何时候都能通过ThreadLocal的弱引用访问到Entry中的value，进而清除掉<br>
+ThreadLocal正确的使用方法：
+（1）每次使用完ThreadLocal都手动调用remove()方法清除数据；
+（2）将ThreadLocal变量定义成private static，这样就一直存在ThreadLocal强引用，也就能保证任何时候都能通过ThreadLocal的弱引用访问到Entry中的value，进而清除掉
 
 ### 19，进程间的通信
 
@@ -1059,10 +1059,10 @@ ThreadLocal正确的使用方法：<br>
 
 ### 20，并发模型
 
-（1）共享内存<br>
-比如Java的加锁<br>
-（2）消息传递<br>
-比如go channel<br>
+（1）共享内存
+比如Java的加锁
+（2）消息传递
+比如go channel
 对线程间共享状态的各种操作都被封装在线程之间传递的消息中，这通常要求：发送消息时对状态进行复制，并且在消息传递的边界上交出这个状态的所有权。从逻辑上看，这个操作与共享内存系统中执行的原子更新操作相同，
 但从物理上来看则非常不同。由于需要执行复制操作，所以大多数消息传递的实现在性能上并不优越，但线程中的状态管理工作通常会变得更为简单。
 
@@ -1086,39 +1086,39 @@ ThreadLocal正确的使用方法：<br>
 
 ### 23，Java对象的锁池和等待池
 
-Java平台中，因为有内置锁的机制，每个对象都可以承担锁的功能。Java虚拟机会为每个对象维护两个“队列”（姑且称之为“队列”，尽管它不一定符合数据结构上队列的“先进先出”原则）：<br>
-一个叫Entry Set（入口集）;<br>
-另外一个叫Wait Set（等待集）。<br>
-对于任意的对象objectX，objectX的Entry Set用于存储等待获取objectX这个锁的所有线程，也就是传说中的锁池，objectX的Wait Set用于存储执行了objectX.wait()/wait(long)的线程，也就是等待池。<br>
+Java平台中，因为有内置锁的机制，每个对象都可以承担锁的功能。Java虚拟机会为每个对象维护两个“队列”（姑且称之为“队列”，尽管它不一定符合数据结构上队列的“先进先出”原则）：
+一个叫Entry Set（入口集）;
+另外一个叫Wait Set（等待集）。
+对于任意的对象objectX，objectX的Entry Set用于存储等待获取objectX这个锁的所有线程，也就是传说中的锁池，objectX的Wait Set用于存储执行了objectX.wait()/wait(long)的线程，也就是等待池。
 原文链接：https://blog.csdn.net/qq_22498277/article/details/82184419
 
 ![img_3.png](assets/img_3_ObjectMonitor.png)
 
-（1）准备争抢会进入临界区的线程会进入Entry Set；<br>
-（2）只有一个线程会进去临界区，独占锁；<br>
-（3）获取锁的线程执行wait方法会让出锁，并进去Wait Set；<br>
-（4）Wait Set中的线程需要被唤醒才能进入Entry Set，然后再参与竞争；<br>
+（1）准备争抢会进入临界区的线程会进入Entry Set；
+（2）只有一个线程会进去临界区，独占锁；
+（3）获取锁的线程执行wait方法会让出锁，并进去Wait Set；
+（4）Wait Set中的线程需要被唤醒才能进入Entry Set，然后再参与竞争；
 
 作者：此间有道
 链接：https://www.jianshu.com/p/a3f86c89eb54
 
-### 24，并发的三大特性<br>
+### 24，并发的三大特性
 
-（1）原子性<br>
-java内存模型保证原子性：lock, unlock, synchronized<br>
-（2）可见性<br>
-a. volatile<br>
-Java内存模型是通过在变量修改后将新值同步回主内存，在变量读取前从主内存刷新变量值这种依赖主内存作为传递媒介的方式来实现可见性的，无论是普通变量还是volatile变量都是如此。<br>
-普通变量与volatie变量的区别是，volatile的特殊规则保证了新值能立即同步到主内存，以及每次使用前立即从主内存刷新。因此我们可以说volatile保证了多线程操作时变量的可见性，而普通变量则不能保证这一点。<br>
-b. synchronized<br>
-同步块的可见性，是由“对一个变量执行unlock操作之前，必须先把此变量同步回主内存中（执行store、write操作）”这条规则获得的。<br>
-c. final<br>
-被final修饰的字段在构造器中一旦被初始化完成，并且构造器没有把“this”的引用传递出去，那么在其他线程中就能看见final字段的值<br>
-（3）有序性<br>
-a. volatile<br>
-volatile关键字本身就包含了禁止指令重排序的语义<br>
-b. synchronized<br>
-则是由“一个变量在同一个时刻只允许一条线程对其进行lock操作”这条规则获得的，这个规则决定了持有同一个锁的两个同步块只能串行地进入<br>
+（1）原子性
+java内存模型保证原子性：lock, unlock, synchronized
+（2）可见性
+a. volatile
+Java内存模型是通过在变量修改后将新值同步回主内存，在变量读取前从主内存刷新变量值这种依赖主内存作为传递媒介的方式来实现可见性的，无论是普通变量还是volatile变量都是如此。
+普通变量与volatie变量的区别是，volatile的特殊规则保证了新值能立即同步到主内存，以及每次使用前立即从主内存刷新。因此我们可以说volatile保证了多线程操作时变量的可见性，而普通变量则不能保证这一点。
+b. synchronized
+同步块的可见性，是由“对一个变量执行unlock操作之前，必须先把此变量同步回主内存中（执行store、write操作）”这条规则获得的。
+c. final
+被final修饰的字段在构造器中一旦被初始化完成，并且构造器没有把“this”的引用传递出去，那么在其他线程中就能看见final字段的值
+（3）有序性
+a. volatile
+volatile关键字本身就包含了禁止指令重排序的语义
+b. synchronized
+则是由“一个变量在同一个时刻只允许一条线程对其进行lock操作”这条规则获得的，这个规则决定了持有同一个锁的两个同步块只能串行地进入
 
 ### 25，java对象的二分模型
 
@@ -1283,9 +1283,9 @@ HotSpot是基于c++实现，而c++是一门面向对象的语言，本身具备�
 
 之所以采用这个模型是因为HotSopt JVM的设计者不想让每个对象中都含有一个vtable（虚函数表），所以就把对象模型拆成klass和oop，其中oop中不含有任何虚函数，而Klass就含有虚函数表，可以进行method dispatch。
 
-链接：https://www.jianshu.com/p/424a920771a3
+链接：<https://www.jianshu.com/p/424a920771a3>
 
-![](/Users/huxiangming/Library/Application%20Support/marktext/images/2022-05-15-12-43-12-image.png)
+![cpp的虚函数](assets/c++的虚函数.png)
 
 C++多态类中的虚函数表是Compile-Time还是Run-Time建立的？
 
@@ -1562,19 +1562,19 @@ protected void setException(Throwable t) {
 
 ### 29，部分linux命令
 
-（1）ping命令使用的是什么协议？ ICMP<br>
-（2）kill与kill -9的区别，kill命令的底层是什么？<br>
+（1）ping命令使用的是什么协议？ ICMP
+（2）kill与kill -9的区别，kill命令的底层是什么？
     使用kill -l查看linux信号
     kill  默认发送15 SIGTERM
     kill -9 就是发送9 SIGKILL
     ![linux信号](assets/linux-signals.png)
-（3）查询端口的命令是什么？ netstat<br>
+（3）查询端口的命令是什么？ netstat
 
 ### 30，TCP相关
 
-（1）TCP释放连接，哪一方处理time_await状态？<br>
+（1）TCP释放连接，哪一方处理time_await状态？
 
 ![img_2.png](assets/img_2_TCP握手挥手.png)
 
-（2）TCP拥塞机制<br>
-（3）TCP为什么有粘包和拆包<br>
+（2）TCP拥塞机制
+（3）TCP为什么有粘包和拆包
