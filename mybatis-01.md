@@ -102,7 +102,7 @@ contents中是把mybatis中的sql解析成11个片段。执行完apply方法之�
 
 ![$符被替换](assets/$符被替换.png)
 
-${}符号在哪儿被替换的？是在IfSqlNode中替换的：
+> ${}符号在哪儿被替换的？是在IfSqlNode中替换的：
 
 ![IfSqlNode](assets/IfSqlNode.png)
 

@@ -18,7 +18,7 @@ apache的dubbo版本从2.7.0开始
 （2）xml中配置的dubbo版本号
 
 ```xml
-<!-- 使用的版本号为 1.0.0，此版本号为接口的版本号 -->
+<!-- 使用的版本号为 1.0.0，此版本号为接口的版本号 ->
 <dubbo:service registry="loan" version="1.0.0" scope="remote" register="true"
                interface="com.abc.pfs.service.api.QueryService" ref="queryService"/>
 ```
@@ -26,10 +26,10 @@ apache的dubbo版本从2.7.0开始
 （3）默认的协议：序列化 hessian2，传输 dubbo
 
 ```xml
-<!-- 序列化协议 hessian2 -->
+<!-- 序列化协议 hessian2 ->
 <dubbo:provider serialization="hessian2" retries="0"  filter="setOrg" timeout="${dubbo.provider.timeout:3000}"
                 threads="${dubbo.provider.threads:300}" />
-<!-- 传输协议 dubbo -->
+<!-- 传输协议 dubbo ->
 <dubbo:protocol name="dubbo" port="${dubbo.protocol.port}" />
 ```
 
@@ -60,16 +60,16 @@ public class ExchangeCodec extends TelnetCodec {
 
 ```java
 export()
---> ServiceConfig.export()
---> doExport()
---> doExportUrls()
---> loadRegistries(true)
---> doExportFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs)
---> exportLocal(URL url)
---> proxyFactory.getInvoker(ref, (Class) interfaceClass, local)
---> ExtensionLoader.getExtensionLoader(ProxyFactory.class).getExtension("javassist")
---> extension.getInvoker(arg0, arg1, arg2)
---> StubProxyFactoryWrapper.getInvoker(T proxy, Class<T> type, URL url)
+-> ServiceConfig.export()
+-> doExport()
+-> doExportUrls()
+-> loadRegistries(true)
+-> doExportFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs)
+-> exportLocal(URL url)
+-> proxyFactory.getInvoker(ref, (Class) interfaceClass, local)
+-> ExtensionLoader.getExtensionLoader(ProxyFactory.class).getExtension("javassist")
+-> extension.getInvoker(arg0, arg1, arg2)
+-> StubProxyFactoryWrapper.getInvoker(T proxy, Class<T> type, URL url)
 ...
 ```
 

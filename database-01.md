@@ -282,7 +282,7 @@ SQL 标准定义了四个隔离级别：
 
 ### 17，InnoDB 有哪几类行锁？
 
-MySQL InnoDB 支持三种行锁定方式：
+MySQL InnoDB 有三种行锁的算法：
 
 * 记录锁（Record Lock） ：也被称为记录锁，属于单个行记录上的锁。
 * 间隙锁（Gap Lock） ：锁定一个范围，不包括记录本身。

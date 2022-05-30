@@ -49,7 +49,7 @@ public class CyclicBarrier {
 }
 ```
 
-### 2，jdk源码中类似的代码：
+### 2，jdk源码中类似的代码
 
 （1）HashMap中的tableSizeFor方法
 
@@ -194,6 +194,7 @@ public static <T,U> T[] copyOf(U[] original, int newLength, Class<? extends T[]>
 ```
 
 ### 3，HashMap允许null键和null值吗？
+
 允许。因为key唯一，所以只能有一个null键，而value为null，可以有多个
 
 ### 4，HashMap中能保证元素有序的是哪个Map？
@@ -324,8 +325,11 @@ public LinkedHashMap(int initialCapacity,
     this.accessOrder = accessOrder;
 }
 ```
+
 ### 5，HashMap的put方法和扩容机制
+
 * put方法
+
 ```java
 final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
                    boolean evict) {
@@ -409,39 +413,43 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
     return null;
 } 
 ```
+
 * 扩容机制
+
 ![HashMap扩容机制](assets/Hashmap扩容机制.png)
 为什么 & oldCap == 0来判断？如上图所示，数字14，在原数组和新数组中的位置是一样的，而数字30，在旧数组和新数组的位置的值，二进制形式，相差最高位的1，也就是旧数组的长度
+
 ```java
 do {
-	next = e.next;
-        // 因为oldCap的二进制形式只有一位是1，此举可以把元素按这一位分成2组
-	if ((e.hash & oldCap) == 0) {
-		if (loTail == null)
-			loHead = e;
-		else
-			loTail.next = e;
-		loTail = e;
-	}
-	else {
-		if (hiTail == null)
-			hiHead = e;
-		else
-			hiTail.next = e;
-		hiTail = e;
-	}
+    next = e.next;
+    // 因为oldCap的二进制形式只有一位是1，此举可以把元素按这一位分成2组
+    if ((e.hash & oldCap) == 0) {
+        if (loTail == null)
+            loHead = e;
+        else
+            loTail.next = e;
+        loTail = e;
+    }
+    else {
+        if (hiTail == null)
+            hiHead = e;
+        else
+            hiTail.next = e;
+        hiTail = e;
+    }
 } while ((e = next) != null);
 if (loTail != null) {
-	loTail.next = null;
-        // 把低位链表挂到数组上
-	newTab[j] = loHead;
+    loTail.next = null;
+    // 把低位链表挂到数组上
+    newTab[j] = loHead;
 }
 if (hiTail != null) {
-	hiTail.next = null;
-        // 把高位链表挂到数组上
-	newTab[j + oldCap] = hiHead;
+    hiTail.next = null;
+    // 把高位链表挂到数组上
+    newTab[j + oldCap] = hiHead;
 }
 ```
+
 ### 6，HashMap 1.7和1.8的区别
 
 （1）数据结构
@@ -474,14 +482,14 @@ if (hiTail != null) {
 
 * 1.8中是扩容前插入，转移数据时统一计算插入位置。
 
-原文链接：https://blog.csdn.net/a718515028/article/details/108265496
+原文链接：<https://blog.csdn.net/a718515028/article/details/108265496>
 
 ### 7，Happens-Before规则
 
 （1）oracle官方文档：[Threads and Locks](https://docs.oracle.com/javase/specs/jls/se6/html/memory.html) 
 （2）文档关于Happens-Before内容
 
-```
+```plain text
 17.4.4 Synchronization Order
 
 Every execution has a synchronization order. A synchronization order is a total order over all of the synchronization actions of an execution. For each thread t, the synchronization order of the synchronization actions (§17.4.2) in t is consistent with the program order (§17.4.3) of t.
@@ -531,7 +539,7 @@ The semantics of operations other than inter-thread actions, such as reads of ar
 ```
 
 （3）volatile
-https://blog.csdn.net/weixin_34384681/article/details/88840660
+<https://blog.csdn.net/weixin_34384681/article/details/88840660>
 
 ### 8，两个质数1231与1237
 
@@ -556,8 +564,6 @@ a. **破坏互斥条件** ：这个条件我们没有办法破坏，因为我们
 b. **破坏请求与保持条件** ：一次性申请所有的资源。
 c. **破坏不剥夺条件** ：占用部分资源的线程进一步申请其他资源时，如果申请不到，可以主动释放它占有的资源。
 d. **破坏循环等待条件** ：依靠按序申请资源来预防。按某一顺序申请资源，释放资源则反序释放。破坏循环等待条件。
-
-
 
 ### 10，线程池构造函数的参数
 
@@ -866,7 +872,7 @@ public class AtomicInteger extends Number implements java.io.Serializable {
 
 ### 16，docker的优势
 
-原文链接：https://blog.csdn.net/qq_37527715/article/details/79878891
+原文链接：<https://blog.csdn.net/qq_37527715/article/details/79878891>
 （1）简化配置
 这是Docker初始目的，虚拟机VM最大的好处是基于你的应用配置能够无缝运行在任何平台上。Docker提供同样类似VM的能力，但是没有任何副作用，它能让你将环境和配置放入代码然后部署，同样的Docker配置能够在各种环境中使用，这实际是将应用环境和底层环境实现了解耦。
 
@@ -1055,7 +1061,7 @@ ThreadLocal正确的使用方法：
 
 ### 19，进程间的通信
 
-请看这篇博客：https://www.jianshu.com/p/c1015f5ffa74
+请看这篇博客：<https://www.jianshu.com/p/c1015f5ffa74>
 
 ### 20，并发模型
 
@@ -1090,7 +1096,7 @@ Java平台中，因为有内置锁的机制，每个对象都可以承担锁的�
 一个叫Entry Set（入口集）;
 另外一个叫Wait Set（等待集）。
 对于任意的对象objectX，objectX的Entry Set用于存储等待获取objectX这个锁的所有线程，也就是传说中的锁池，objectX的Wait Set用于存储执行了objectX.wait()/wait(long)的线程，也就是等待池。
-原文链接：https://blog.csdn.net/qq_22498277/article/details/82184419
+原文链接：<https://blog.csdn.net/qq_22498277/article/details/82184419>
 
 ![img_3.png](assets/img_3_ObjectMonitor.png)
 
@@ -1100,7 +1106,7 @@ Java平台中，因为有内置锁的机制，每个对象都可以承担锁的�
 （4）Wait Set中的线程需要被唤醒才能进入Entry Set，然后再参与竞争；
 
 作者：此间有道
-链接：https://www.jianshu.com/p/a3f86c89eb54
+链接：<https://www.jianshu.com/p/a3f86c89eb54>
 
 ### 24，并发的三大特性
 
