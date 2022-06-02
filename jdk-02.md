@@ -702,3 +702,234 @@ private boolean addWorker(Runnable firstTask, boolean core) {
     return workerStarted;
 }
 ```
+
+### 53，项目中的代码优化
+
+#### （1）XStream内存泄露问题修复
+
+* 内存泄露的原因
+
+  ```java
+    public XStream() {
+      this((ReflectionProvider)null, (Mapper)((Mapper)null), (HierarchicalStreamDriver)(new XppDriver()));
+    } 
+
+    public XStream(ReflectionProvider reflectionProvider, Mapper mapper, HierarchicalStreamDriver driver) {
+      this(reflectionProvider, driver, (ClassLoader)(new CompositeClassLoader()), mapper);
+    }
+  ```
+
+  导致内存泄露的就是这个CompositeClassLoader
+
+* 怎么修复？
+
+![xstream_01](assets/img_19_xstream_01.png)
+![xstream_02](assets/img_19_xstream_02.png)
+![xstream_02](assets/img_19_xstream_03.png)
+
+#### （2）配置类的优化
+
+* 优化的结果
+  420行，优化至162行，其中field 28行，其余是get/set方法
+  每个模块单独配置，不影响其他模块
+* 为什么优化？
+  * 因为配置类放在公共模块，工程中有web，service，schedule，batch，每增加一项，就要在每个模块中增加这项，否则报错
+  * 配置项重复
+  
+    ```java
+      // 原来的配置类
+      @Value("${chn_collect_action}")
+      public String chn_collect_action;
+      @Value("${chn_collect_receiver}")
+      public String chn_collect_receiver;
+      @Value("${chn_collect_sender}")
+      public String chn_collect_sender;
+      @Value("${chn_collect_service}")
+      public String chn_collect_service;
+      @Value("${chn_collect_busid}")
+      public String chn_collect_busid;
+
+      @Value("${chn_pay_pri_action}")
+      public String chn_pay_pri_action;
+      @Value("${chn_pay_pri_receiver}")
+      public String chn_pay_pri_receiver;
+      @Value("${chn_pay_pri_sender}")
+      public String chn_pay_pri_sender;
+      @Value("${chn_pay_pri_service}")
+      public String chn_pay_pri_service;
+      @Value("${chn_pay_pri_busid}")
+      public String chn_pay_pri_busid;
+
+      
+    ```
+
+* 怎么优化
+  * 新建配置类，相同的参数只保留一个
+  
+    ```java
+    // 新的配置类
+      public class ChannelParamConfig {
+
+        private String action;
+        private String receiver;
+        private String sender;
+        private String service;
+        private String busId;
+
+        public String getAction() {
+          return action;
+        }
+
+        public void setAction(String action) {
+          this.action = action;
+        }
+
+        public String getReceiver() {
+          return receiver;
+        }
+
+        public void setReceiver(String receiver) {
+          this.receiver = receiver;
+        }
+
+        public String getSender() {
+          return sender;
+        }
+
+        public void setSender(String sender) {
+          this.sender = sender;
+        }
+
+        public String getService() {
+          return service;
+        }
+
+        public void setService(String service) {
+          this.service = service;
+        }
+
+        public String getBusId() {
+          return busId;
+        }
+
+        public void setBusId(String busId) {
+          this.busId = busId;
+        }
+
+      }
+    ```
+
+  * 在各个模块中新建xml配置bean
+  
+    ```xml
+      <bean id="payPriConfig" class="com.xxx.ChannelParamConfig">
+        <property name="action" value="${chn_pay_pri_action}"/>
+        <property name="receiver" value="${chn_pay_pri_receiver}"/>
+        <property name="sender" value="${chn_pay_pri_sender}"/>
+        <property name="service" value="${chn_pay_pri_service}"/>
+        <property name="busId" value="${chn_pay_pri_busid}"/>
+      </bean>
+    ```
+
+#### （3）某项目的架构优化
+
+* 优化的原因
+  系统构成太复杂，增加了运维的难度，没有必要
+  此系统是照搬公司的信贷系统的架构：批量 + GMP批量管理系统，而GMP完全可以不用，并且不用批量，只用定时器
+
+* 优化的结果
+  * 去掉GMP
+  * 批量任务全部用定时器改写
+
+### 54，String类中的CASE_INSENSITIVE_COMPARATOR
+
+```java
+public static final Comparator<String> CASE_INSENSITIVE_ORDER
+                                         = new CaseInsensitiveComparator();
+    // 内部类
+    private static class CaseInsensitiveComparator
+            implements Comparator<String>, java.io.Serializable {
+        // use serialVersionUID from JDK 1.2.2 for interoperability
+        private static final long serialVersionUID = 8575799808933029326L;
+
+        public int compare(String s1, String s2) {
+            int n1 = s1.length();
+            int n2 = s2.length();
+            int min = Math.min(n1, n2);
+            for (int i = 0; i < min; i++) {
+                char c1 = s1.charAt(i);
+                char c2 = s2.charAt(i);
+                if (c1 != c2) {
+                    c1 = Character.toUpperCase(c1);
+                    c2 = Character.toUpperCase(c2);
+                    if (c1 != c2) {
+                        c1 = Character.toLowerCase(c1);
+                        c2 = Character.toLowerCase(c2);
+                        if (c1 != c2) {
+                            // No overflow because of numeric promotion
+                            return c1 - c2;
+                        }
+                    }
+                }
+            }
+            return n1 - n2;
+        }
+
+        /** Replaces the de-serialized object. */
+        private Object readResolve() { return CASE_INSENSITIVE_ORDER; }
+    }
+    // 省略
+
+```
+
+### 55，设计模式的原则
+
+* 1) 单一职责原则
+* 2) 接口隔离原则
+* 3) 依赖倒转(倒置)原则
+* 4) 里氏替换原则
+* 5) 开闭原则
+* 6) 迪米特法则
+* 7) 合成复用原则
+
+### 56，ArrayList的toString()方法
+
+```java
+List<Integer> list = new ArrayList<>();
+Collections.addAll(list, 2, 3, 5, 7, 9);
+/**
+ * 打印结果是  [2,3,5,7,9]
+ * 打印结果不是地址值，那一定是list在哪里重写了toString方法
+ */
+System.out.println(list);
+```
+
+ArrayList类中没有，AbstractList类中没有，继续找父类
+
+```java
+public class ArrayList<E> extends AbstractList<E>
+        implements List<E>, RandomAccess, Cloneable, java.io.Serializable
+        
+public abstract class AbstractList<E> extends AbstractCollection<E> implements List<E>
+```
+
+最终在AbstractCollection中找到了toString()方法
+
+```java
+// java.util.AbstractCollection
+public String toString() {
+  Iterator<E> it = iterator();
+  if (! it.hasNext())
+    return "[]";
+
+  StringBuilder sb = new StringBuilder();
+  sb.append('[');
+  for (;;) {
+    E e = it.next();
+    sb.append(e == this ? "(this Collection)" : e);
+    if (! it.hasNext())
+      return sb.append(']').toString();
+    sb.append(',').append(' ');
+  }
+}
+```

@@ -29,7 +29,7 @@
 
 另一张图
 ![查询sql执行流程](assets/查询sql执行流程.png)
-参考：https://blog.csdn.net/qq_42239520/article/details/122145983
+参考：<https://blog.csdn.net/qq_42239520/article/details/122145983>
 
 ### 3，数据库范式
 
@@ -121,7 +121,7 @@ relay_log_recovery=ON
 
 ### 6，mysql的事务是怎么实现的？
 
-https://www.cnblogs.com/ffdsj/p/12266539.html
+<https://www.cnblogs.com/ffdsj/p/12266539.html>
 
 （1）原子性：使用 undo log ，从而达到回滚；
 （2）持久性：用 redo log，从而达到故障后恢复；
@@ -294,3 +294,182 @@ REPEATABLE-READ（可重读），可以解决幻读问题发生的，主要有�
 
 * 快照读 ：由 MVCC 机制来保证不出现幻读。
 * 当前读 ： 使用 Next-Key Lock 进行加锁来保证不出现幻读。
+
+### 19，Redis分布式锁
+
+* 加锁的正确方式
+
+```java
+public static boolean tryLock(Jedis jedis, String lockKey, String requestId, int expireTime) {
+
+  String result = jedis.set(lockKey, requestId, SET_IF_NOT_EXIST, SET_WITH_EXPIRE_TIME, expireTime);
+
+  if (LOCK_SUCCESS.equals(result)) {
+      return true;
+  }
+  return false;
+
+}
+```
+
+* 解锁的正确方式
+
+```java
+public static boolean releaseLock(Jedis jedis, String lockKey, String requestId) {
+  // 这是Lua脚本，Lua脚本在Redis中是原子执行的，执行过程中不会插入其他命令
+  String script = "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end";
+  Object result = jedis.eval(script, Collections.singletonList(lockKey), Collections.singletonList(requestId));
+
+  if (RELEASE_SUCCESS.equals(result)) {
+    return true;
+  }
+  return false;
+
+  }
+```
+
+* Redisson分布式锁
+
+```java
+public class RedissonDemo {
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+    @Autowired
+    private RedissonClient redisson;
+
+    public String deductStock() {
+        String lockKey = "AccLockKey";
+        RLock rLock = redisson.getLock(lockKey);
+        try {
+            rLock.tryLock(30, TimeUnit.SECONDS);
+            int stock = Integer.parseInt(stringRedisTemplate.opsForValue().get("stock"));
+            if (stock > 0) {
+                int realStock = stock - 1;
+                stringRedisTemplate.opsForValue().set("stock", realStock + "");
+                System.out.println("商品扣减成功，剩余库存" + realStock + "");
+            } else {
+                System.out.println("扣减失败，库存不足");
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            rLock.unlock();
+        }
+        return "ok";
+    }
+}
+
+// org.redisson.Redisson
+public RLock getLock(String name) {
+  return new RedissonLock(this.commandExecutor, name);
+}
+
+// org.redisson.RedissonLock
+public RedissonLock(CommandAsyncExecutor commandExecutor, String name) {
+  super(commandExecutor, name);
+  this.commandExecutor = commandExecutor;
+  this.internalLockLeaseTime = commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout();
+  this.pubSub = commandExecutor.getConnectionManager().getSubscribeService().getLockPubSub();
+}
+
+// org.redisson.RedissonLock
+public boolean tryLock(long waitTime, TimeUnit unit) throws InterruptedException {
+  return this.tryLock(waitTime, -1L, unit);
+}
+
+public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
+  long time = unit.toMillis(waitTime);
+  long current = System.currentTimeMillis();
+  long threadId = Thread.currentThread().getId();
+  Long ttl = this.tryAcquire(waitTime, leaseTime, unit, threadId);
+  if (ttl == null) {
+    return true;
+  } else {
+    // 省略
+  }
+  // 省略
+}
+
+private Long tryAcquire(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
+  return (Long)this.get(this.tryAcquireAsync(waitTime, leaseTime, unit, threadId));
+}
+
+private <T> RFuture<Long> tryAcquireAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
+  RFuture ttlRemainingFuture;
+  if (leaseTime != -1L) {
+      ttlRemainingFuture = this.tryLockInnerAsync(waitTime, leaseTime, unit, threadId, RedisCommands.EVAL_LONG);
+  } else {
+      ttlRemainingFuture = this.tryLockInnerAsync(waitTime, this.internalLockLeaseTime, TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_LONG);
+  }
+
+  ttlRemainingFuture.onComplete((ttlRemaining, e) -> {
+      if (e == null) {
+          if (ttlRemaining == null) {
+              if (leaseTime != -1L) {
+                  this.internalLockLeaseTime = unit.toMillis(leaseTime);
+              } else {
+                  this.scheduleExpirationRenewal(threadId);
+              }
+          }
+
+      }
+  });
+  return ttlRemainingFuture;
+}
+
+// Lua脚本
+<T> RFuture<T> tryLockInnerAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
+  return this.evalWriteAsync(this.getRawName(), LongCodec.INSTANCE, command, "if (redis.call('exists', KEYS[1]) == 0) then redis.call('hincrby', KEYS[1], ARGV[2], 1); redis.call('pexpire', KEYS[1], ARGV[1]); return nil; end; if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then redis.call('hincrby', KEYS[1], ARGV[2], 1); redis.call('pexpire', KEYS[1], ARGV[1]); return nil; end; return redis.call('pttl', KEYS[1]);", Collections.singletonList(this.getRawName()), new Object[]{unit.toMillis(leaseTime), this.getLockName(threadId)});
+}
+
+// 解锁
+// org.redisson.RedissonLock
+public void unlock() {
+    try {
+        this.get(this.unlockAsync(Thread.currentThread().getId()));
+    } catch (RedisException var2) {
+        if (var2.getCause() instanceof IllegalMonitorStateException) {
+            throw (IllegalMonitorStateException)var2.getCause();
+        } else {
+            throw var2;
+        }
+    }
+}
+
+// org.redisson.RedissonBaseLock
+public RFuture<Void> unlockAsync(long threadId) {
+    RPromise<Void> result = new RedissonPromise();
+    RFuture<Boolean> future = this.unlockInnerAsync(threadId);
+    future.onComplete((opStatus, e) -> {
+        this.cancelExpirationRenewal(threadId);
+        if (e != null) {
+            result.tryFailure(e);
+        } else if (opStatus == null) {
+            IllegalMonitorStateException cause = new IllegalMonitorStateException("attempt to unlock lock, not locked by current thread by node id: " + this.id + " thread-id: " + threadId);
+            result.tryFailure(cause);
+        } else {
+            result.trySuccess((Object)null);
+        }
+    });
+    return result;
+}
+
+// org.redisson.RedissonBaseLock
+protected abstract RFuture<Boolean> unlockInnerAsync(long var1);
+
+// org.redisson.RedissonLock
+protected RFuture<Boolean> unlockInnerAsync(long threadId) {
+    return this.evalWriteAsync(this.getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN, "if (redis.call('hexists', KEYS[1], ARGV[3]) == 0) then return nil;end; local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); if (counter > 0) then redis.call('pexpire', KEYS[1], ARGV[2]); return 0; else redis.call('del', KEYS[1]); redis.call('publish', KEYS[2], ARGV[1]); return 1; end; return nil;", Arrays.asList(this.getRawName(), this.getChannelName()), new Object[]{LockPubSub.UNLOCK_MESSAGE, this.internalLockLeaseTime, this.getLockName(threadId)});
+}
+```
+
+### 20，索引失效有哪些情况
+
+* （1）函数
+* （2）in, or, is null, is not null
+* （3）like %
+* （4）联合索引，只查询第二个或以后的字段（最左匹配原则）
+* （5）隐式转换
+* （6）!=, <>
+* （7）字符串不加单引号
+* （8）select * 

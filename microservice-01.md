@@ -60,6 +60,7 @@ public class ExchangeCodec extends TelnetCodec {
 
 ```java
 export()
+-> ServiceBean.export()
 -> ServiceConfig.export()
 -> doExport()
 -> doExportUrls()
@@ -379,3 +380,162 @@ public class AdaptiveCompiler implements Compiler {
 （4）先来先服务的投票原则
 
 （5）大多数选票原则
+
+### 14，Netty
+
+#### NioEventLoopGroup 默认的构造函数会起多少线程呢
+
+```java
+public abstract class MultithreadEventLoopGroup extends MultithreadEventExecutorGroup implements EventLoopGroup {
+
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(MultithreadEventLoopGroup.class);
+
+    private static final int DEFAULT_EVENT_LOOP_THREADS;
+
+    static {
+        DEFAULT_EVENT_LOOP_THREADS = Math.max(1, SystemPropertyUtil.getInt(
+                "io.netty.eventLoopThreads", NettyRuntime.availableProcessors() * 2));
+    
+```
+
+### 15，判断一个数是不是2的幂
+
+#### netty源码
+
+```java
+// io.netty.util.concurrent.DefaultEventExecutorChooserFactory#newChooser
+/**
+  为什么可以这样判断？
+  关键在于：负数的补码：正数的二进制每位取反之后，加1
+
+  分析三个数
+  （1）如果val是8，二进制是0000 1000
+  而-8的补码是8取反再加1，
+  8取反，得到二进制是1111 0111，
+  加1，得到1111 1000
+  二者做与运算
+  0000 1000   ->  8
+  1111 1000   -> -8
+  0000 1000   ->  8（8 & -8的结果）
+
+  （2）如果val是4，二进制是0000 0100
+  而-4的补码是4取反再加1
+  4取反，得到二进制是1111 1011，
+  加1，得到1111 1100，
+  二者做与运算
+  0000 0100   ->  4
+  1111 1100   -> -4
+  0000 0100   ->  4（4 & -4的结果）
+
+  （3）如果val是5，二进制是0000 0101
+  5取反，得到1111 1010，
+  加1，得到1111 1011，
+  二者做与运算
+  0000 0101   ->  5
+  1111 1011   -> -5
+  0000 0001   ->  1（5 & -5的结果）
+
+  总结：2的幂，二进制只有1个1，其余都是0，取反之后，原来那个唯一的1变成0，其他都是1，
+  再加1，则0变成1，它的右边全部变成0，左边全是1.
+  即正数与负数的区别是，正数高位全是0，负数高位全是1，其余都相同，所以做与运算，结果是该正数
+*/
+private static boolean isPowerOfTwo(int val) {
+    return (val & -val) == val;
+}
+```
+
+### 16，项目中rabbitmq使用方式
+
+* xml配置
+
+```xml
+<task:executor id="amqpConnectionTaskExecutor" pool-size="${rabbitmq.executor.pool.size:1}"/>
+<rabbit:connection-factory id="rabbitConnectionFactory"
+	channel-cache-size="${rabbitmq.channel.cache.size:10}" executor="amqpConnectionTaskExecutor"
+	addresses="${rabbitmq.addresses}" virtual-host="${rabbitmq.vhost:'/dev'}"
+	username="${rabbitmq.user:'guest'}" password="${rabbitmq.password:'guest'}"/>
+
+<!-- 标准的建立Queue的参数 -->
+<rabbit:queue-arguments id="amqpQueueArguments" />
+
+<bean id="aMessageConverter" class="com.xxx.a.mq.config.AMessageConverter"/>
+
+<rabbit:template id="amqpTemplate" connection-factory="rabbitConnectionFactory" />
+
+<!-- 供自动创建队列 -->
+<rabbit:admin connection-factory="rabbitConnectionFactory"/>
+
+<rabbit:queue queue-arguments="amqpQueueArguments" id="bAsyncQueue" name="${listen_queue_name}"/>
+
+<bean id="listenerHandler" class="com.xxx.b.service.impl.BMqListenerService">    
+</bean>   
+
+<!-- 监听b发送 -->    
+<bean id="receiveListenerAdapter" class="org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter">    
+  <constructor-arg ref="listenerHandler" />    
+  <property name="defaultListenerMethod" value="handleRequest" />
+  <property name="messageConverter" ref="aMessageConverter" />
+</bean>    
+
+<!-- 监听b发送 -->    
+<bean id="listenerContainer"    
+  class="org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer">
+  <property name="queueNames" value="${listen_queue_name}" />
+  <property name="connectionFactory" ref="rabbitConnectionFactory" />
+  <property name="messageListener" ref="receiveListenerAdapter" />
+</bean>
+```
+
+* java代码
+
+```java
+public class AMessageConverter extends SimpleMessageConverter {
+    public static final String ORG_HEADER = "a.org";
+    public static final String SID_HEADER = "a.sid";
+    public static final String ORG = "org";
+    private Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    public AMessageConverter() {
+    }
+
+    protected Message createMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
+        messageProperties.setHeader("a.org", OrganizationContextHolder.getOrg());
+        messageProperties.setHeader("a.sid", OrganizationContextHolder.getSid());
+        this.logger.info("client 机构号:" + OrganizationContextHolder.getOrg());
+        return super.createMessage(object, messageProperties);
+    }
+
+    public Object fromMessage(Message message) throws MessageConversionException {
+        if (message != null) {
+            Map<String, Object> headers = message.getMessageProperties().getHeaders();
+            OrganizationContextHolder.setOrg((String)headers.get("a.org"));
+            OrganizationContextHolder.setSid((String)headers.get("a.sid"));
+            if (StringUtils.isEmpty(OrganizationContextHolder.getOrg())) {
+                OrganizationContextHolder.setOrg(SystemPropertyUtil.get("org"));
+            }
+
+            this.logger.info("server 机构号:" + OrganizationContextHolder.getOrg());
+        }
+
+        return super.fromMessage(message);
+    }
+}
+
+public class BMqListenerService {    
+
+    /**
+     * 解析MQ请求
+     *
+     * @param requestParam MQ请求参数
+     */
+    public void handleRequest(String requestParam) {
+        
+
+        try {
+            // do sth.
+        } catch (Exception e) {
+            //
+        }
+    }
+}
+```
