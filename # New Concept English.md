@@ -4,249 +4,249 @@
 
 ### Unit 1
 
-recount
-saga
-anthropoligist
-flint
-rot
-census
-acre
-alpinist
-perilous
-court
-shepherd
-blindfold
-dreary
-presumptuous
-fatuous
-orgy
-utilitarian
-apparatus
-dialysis
-electrocute
+* recount
+* saga
+* anthropoligist
+* flint
+* rot
+* census
+* acre
+* alpinist
+* perilous
+* court
+* shepherd
+* blindfold
+* dreary
+* presumptuous
+* fatuous
+* orgy
+* utilitarian
+* apparatus
+* dialysis
+* electrocute
 
 ### unit 2
 
-espionage
-harp
-ballad
-acrobatic
-conjuring
-thither
-skirmish
-assail
-anarchy
-abject
-vitality
-weariness
-derrick
-block and tackle
-cutting bit
-coring bit
-cylinder
-strata
-gusher
-blizzard
-turbulent
-dust devil
-squall
-eddy
-tenant
-banal
-edifice
-throng
+* espionage
+* harp
+* ballad
+* acrobatic
+* conjuring
+* thither
+* skirmish
+* assail
+* anarchy
+* abject
+* vitality
+* weariness
+* derrick
+* block and tackle
+* cutting bit
+* coring bit
+* cylinder
+* strata
+* gusher
+* blizzard
+* turbulent
+* dust devil
+* squall
+* eddy
+* tenant
+* banal
+* edifice
+* throng
 
 ### unit 3
 
-burrow
-susceptible
-myxomatosis
-bequeath
-pestilence
-porpoise
-unconscious
-ensue
-snout
-shove
-aquaplane
-oceanarium
-swoop
-electrode
-defy
-carnivore
-vertebrate
-lizard
-concoct
-arsenic
-strychnine
-mamba
-viper
-adder
-haemolytic
-viperine
-protagonist
-arena
-encroach
-bewilder
-hypocrisy
-chicanery
-immolate
-loom
-tempo
-grim
-whimsical
-shatter
-albatross
-glider
-harness
-endow
-ply
-gale
-partride
-propulse
-omen
-serenity
-vulgar
-radiance
+* burrow
+* susceptible
+* myxomatosis
+* bequeath
+* pestilence
+* porpoise
+* unconscious
+* ensue
+* snout
+* shove
+* aquaplane
+* oceanarium
+* swoop
+* electrode
+* defy
+* carnivore
+* vertebrate
+* lizard
+* concoct
+* arsenic
+* strychnine
+* mamba
+* viper
+* adder
+* haemolytic
+* viperine
+* protagonist
+* arena
+* encroach
+* bewilder
+* hypocrisy
+* chicanery
+* immolate
+* loom
+* tempo
+* grim
+* whimsical
+* shatter
+* albatross
+* glider
+* harness
+* endow
+* ply
+* gale
+* partride
+* propulse
+* omen
+* serenity
+* vulgar
+* radiance
 
 ### unit 4
 
-abate
-allegatation
-caption
-wreck
-snag
-slander
-squadron
-silt
-scavenger
-vole
-crevasse
-Siberian
-sabre
-bogged
-galleon
-armament
-ferment
-ornament
-riot
-mermaid
-cherub
-zoomorphic
-ablaze
-churn
-pennant
-muzzle
-port
-starboard
-ordnance
-steepen
-Baltic
-fervent
-indispose
+* abate
+* allegatation
+* caption
+* wreck
+* snag
+* slander
+* squadron
+* silt
+* scavenger
+* vole
+* crevasse
+* Siberian
+* sabre
+* bogged
+* galleon
+* armament
+* ferment
+* ornament
+* riot
+* mermaid
+* cherub
+* zoomorphic
+* ablaze
+* churn
+* pennant
+* muzzle
+* port
+* starboard
+* ordnance
+* steepen
+* Baltic
+* fervent
+* indispose
 
 ### unit 5
 
-illiterate
-tribe
-compulsory
-savannah
-delinquency
-adolescence
-slur
-resent
-cow
-hub
-terrestrial
-chasm
-canyon
-incur
-analogous
-foreman
-dividend
-unduly
-likelihood
-moot
-sewage
-disinfectant
-ethanol
-methylated
-discern
-yeast
-fathom
-winkle
-pertinent
-ray
-crest
-trough
-undulate
-tremor
+* illiterate
+* tribe
+* compulsory
+* savannah
+* delinquency
+* adolescence
+* slur
+* resent
+* cow
+* hub
+* terrestrial
+* chasm
+* canyon
+* incur
+* analogous
+* foreman
+* dividend
+* unduly
+* likelihood
+* moot
+* sewage
+* disinfectant
+* ethanol
+* methylated
+* discern
+* yeast
+* fathom
+* winkle
+* pertinent
+* ray
+* crest
+* trough
+* undulate
+* tremor
 
 ### unit 6
 
-mahout
-calf
-pine
-plunge
-tether
-ticklish
-soothe
-chant
-epithet
-blandish
-lash
-slumber
-ninepin
-delicate
-dedicate
-penholder
-legibly
-wriggle
-bluebottle
-transverse
-rendezvous
-aberrant
-pristine
-stereotype
-vernacular
-incumbent
-cactus
-termite
-barbarian
-pagan
-drainage
-heretic
-suffice
-insinuate
-convulsive
-undue
-recuparation
-sedulous
-caprice
-clatter
-grudge
-banish
-manoeuvre
-myriad
-paradox
-cynic
-shun
-chambermaid
-snobbery
-entail
-inclement
-insularity
-cosmopolitan
-patronage
-sauerkraut
-vie
-municipality
-itinerant
-heath
-portfolio
-tipster
-fritter
-gilt
-sanguine
-heady
-pedestrian
+* mahout
+* calf
+* pine
+* plunge
+* tether
+* ticklish
+* soothe
+* chant
+* epithet
+* blandish
+* lash
+* slumber
+* ninepin
+* delicate
+* dedicate
+* penholder
+* legibly
+* wriggle
+* bluebottle
+* transverse
+* rendezvous
+* aberrant
+* pristine
+* stereotype
+* vernacular
+* incumbent
+* cactus
+* termite
+* barbarian
+* pagan
+* drainage
+* heretic
+* suffice
+* insinuate
+* convulsive
+* undue
+* recuparation
+* sedulous
+* caprice
+* clatter
+* grudge
+* banish
+* manoeuvre
+* myriad
+* paradox
+* cynic
+* shun
+* chambermaid
+* snobbery
+* entail
+* inclement
+* insularity
+* cosmopolitan
+* patronage
+* sauerkraut
+* vie
+* municipality
+* itinerant
+* heath
+* portfolio
+* tipster
+* fritter
+* gilt
+* sanguine
+* heady
+* pedestrian
