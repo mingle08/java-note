@@ -2,15 +2,15 @@
 
 ## 序号（31~60）
 
-### 31，CAS
+### 31 CAS的优缺点
 
+* CAS的优点
+  * 不需要加锁，并发小的情况下性能较高
+  * 不会阻塞线程，避免线程挂起唤醒操作
 * CAS存在的问题
-  
-  （1）只能操作一个变量
-
-  （2）ABA问题
-
-  （3）CPU开销问题
+  * 只能操作一个变量
+  * ABA问题
+  * CPU开销问题
 
 * CAS的本质
   在 Java 中，Java 并没有直接实现 CAS，CAS 相关的实现是通过 C++ 内联汇编的形式实现的。Java 代码需通过 JNI 才能调用。
@@ -74,7 +74,7 @@ inline jint Atomic::cmpxchg (jint exchange_value, volatile jint* dest, jint comp
 }
 ```
 
-### 32，CPU指令环
+### 32 CPU指令环
 
 Intel的CPU将特权级别分为4个级别：RING0,RING1,RING2,RING3。
 
@@ -82,7 +82,7 @@ Windows只使用其中的两个级别RING0和RING3，RING0只给操作系统用�
 
 ring0是指CPU的运行级别，ring0是最高级别，ring1次之，ring2更次之……
 
-### 33，垃圾回收器
+### 33 垃圾回收器
 
 * 种类
   
@@ -134,7 +134,7 @@ ring0是指CPU的运行级别，ring0是最高级别，ring1次之，ring2更次
 
   （4）并发重映射
 
-### 34，动态分派
+### 34 动态分派
 
 * 概念：在运行期根据实际类型确定方法执行版本的分派过程
   
@@ -155,7 +155,7 @@ ring0是指CPU的运行级别，ring0是最高级别，ring1次之，ring2更次
 * 虚方法
   Java对象里面的方法默认（即不使用final修饰）就是虚方法。
 
-### 34，符号引用，直接引用
+### 35 符号引用，直接引用
 
 * 符号引用：以字符串的形式存在。
 * 直接引用：运行时实际内存地址
@@ -165,7 +165,7 @@ ring0是指CPU的运行级别，ring0是最高级别，ring1次之，ring2更次
   3）字段；
   4）类方法和接口方法
 
-### 35，DMA(Direct Memory Access)
+### 36 DMA(Direct Memory Access)
 
 * 工作原理：如果按数据块进行I/O，即需要传输大量数据时，就无须CPU的介入。在这种情况下，我们可以让I/O设备与计算机内存进行直接数据交换。而CPU则可以去忙别的事情。这种将CPU的介入减少的I/O模式称为直接内存访问。
 
@@ -178,7 +178,7 @@ ring0是指CPU的运行级别，ring0是最高级别，ring1次之，ring2更次
 
 原文链接：<https://blog.csdn.net/u010711495/article/details/119075935>
 
-### 36，推荐用自定义的线程池
+### 37 推荐用自定义的线程池
 
 ```java
 /** 
@@ -264,7 +264,7 @@ public ThreadPoolExecutor(int corePoolSize,
 }
 ```
 
-### 37，引用的分类
+### 38 引用的分类
 
 （1）强引用
 
@@ -274,7 +274,7 @@ public ThreadPoolExecutor(int corePoolSize,
 
 （4）虚引用
 
-### 38，不再被使用的类
+### 39 不再被使用的类
 
 （1）该类所有的实例都已经被回收
 
@@ -282,7 +282,7 @@ public ThreadPoolExecutor(int corePoolSize,
 
 （3）该类对应的java.lang.Class对象没有任何地方引用
 
-### 39，跳跃表
+### 40 跳跃表
 
 #### （1）Redis中的实现
 
@@ -294,7 +294,7 @@ public ThreadPoolExecutor(int corePoolSize,
 
 ![跳跃表](assets/跳跃表.png)
 
-### 40，JVM性能监控工具
+### 41 JVM性能监控工具
 
 * jps
   
@@ -320,7 +320,7 @@ public ThreadPoolExecutor(int corePoolSize,
   jstack -l 3500
   ```
 
-### 41，主动调用gc的方法
+### 42 主动调用gc的方法
 
 ```java
 System.gc();
@@ -331,13 +331,13 @@ public static void gc() {
 }
 ```
 
-### 42，gitee开源许可证怎么选
+### 43 gitee开源许可证怎么选
 
 ![开源许可证](assets/开源许可证.png)
 
 参考：[代码开源如何选择开源许可证_JackieDYH的博客-CSDN博客_gitee开源许可证选哪个](https://blog.csdn.net/JackieDYH/article/details/105800230?utm_term=%E6%80%8E%E4%B9%88%E9%80%89%E6%8B%A9gitte%E7%9A%84%E5%BC%80%E6%BA%90%E8%AE%B8%E5%8F%AF%E8%AF%81&utm_medium=distribute.pc_aggpage_search_result.none-task-blog-2~all~sobaiduweb~default-1-105800230&spm=3001.4430)
 
-### 43，泛型
+### 44 泛型
 
 1，ParameterizedType
 
@@ -392,7 +392,7 @@ Person[] persons; //不是GenericArrayType
 List<String> strings; //不是GenericArrayType
 ```
 
-### 44，hotspot源码中的juint类型
+### 45 hotspot源码中的juint类型
 
 ```cpp
 // globalDefinitions_visCPP.hpp
@@ -405,15 +405,15 @@ typedef unsigned int     juint;
 typedef unsigned __int64 julong;
 ```
 
-### 45，堆转储的转储是什么意思
+### 46 堆转储的转储是什么意思
 
 ![转储](assets/转储.png)
 
-### 46，Hotspot中定义的5种对象状态
+### 47 Hotspot中定义的5种对象状态
 
 ![对象状态](assets/Hotspot中定义的5种对象状态.png)
 
-### 47，JVM内部定义的类状态
+### 48 JVM内部定义的类状态
 
 ```cpp
 // hotspot/src/share/vm/oops/instanceKlass.hpp
@@ -430,7 +430,7 @@ enum ClassState {
 };
 ```
 
-### 48，创建对象
+### 49 创建对象
 
 * 概述
   字节码new表示创建对象，虚拟机遇到该指令时，从栈顶取得目标对象在常量池中的索引，接着定位到目标对象的类型。接下来，虚拟机将根据该类的状态，采用相应的内存分配技术，在内存中分配实例空间，并完全实例数据和对象头的初始化。这样，一个对象就在JVM中创建好了
@@ -497,17 +497,17 @@ IRT_ENTRY(void, InterpreterRuntime::_new(JavaThread* thread, ConstantPool* pool,
 IRT_END
 ```
 
-### 49，volatile
+### 50 volatile
 
 * 使用 volatile
    修饰共享变量后，每个线程要操作变量时会从主内存中将变量拷贝到本地内存作为副本，当线程操作变量副本并写回主内存后，会通过 CPU 总线嗅探机制告知其他线程该变量副本已经失效，需要重新从主内存中读取。
 * 嗅探机制工作原理
   每个处理器通过监听在总线上传播的数据来检查自己的缓存值是不是过期了，如果处理器发现自己缓存行对应的内存地址修改，就会将当前处理器的缓存行设置无效状态，当处理器对这个数据进行修改操作的时候，会重新从主内存中把数据读到处理器缓存中。
 
-### 50，生产环境，cpu占用过高怎么排查？
+### 51 生产环境，cpu占用过高怎么排查？
 
 * （1）top命令查看进程id
-* （2）ps命令
+* （2）ps命令查看线程id：tid
   
     ```shell
     ps H -eo pid,tid,%cpu | grep 进程pid
@@ -529,7 +529,7 @@ IRT_END
 
 参考博文：<https://www.jianshu.com/p/9a623ff8de71>
 
-### 51，ThreadPoolExecutor成员变量ctl
+### 52 ThreadPoolExecutor成员变量ctl
 
 假设Integer类型是32位二进制表示，则其高3位用来表示线程池状态，后面29位用来记录线程池的线程个数
 
@@ -579,7 +579,7 @@ private static int ctlOf(int rs, int wc) {
 }
 ```
 
-### 52，ThreadPoolExecutor的execute方法
+### 53 ThreadPoolExecutor的execute方法
 
 ![ThreadPoolExecutor](assets/ThreadPoolExecutor%E5%86%85%E9%83%A8%E7%B1%BB.png)
 
@@ -703,7 +703,7 @@ private boolean addWorker(Runnable firstTask, boolean core) {
 }
 ```
 
-### 53，项目中的代码优化
+### 54 项目中的代码优化
 
 #### （1）XStream内存泄露问题修复
 
@@ -841,7 +841,7 @@ private boolean addWorker(Runnable firstTask, boolean core) {
   * 去掉GMP
   * 批量任务全部用定时器改写
 
-### 54，String类中的CASE_INSENSITIVE_COMPARATOR
+### 55 String类中的CASE_INSENSITIVE_COMPARATOR
 
 ```java
 public static final Comparator<String> CASE_INSENSITIVE_ORDER
@@ -882,17 +882,27 @@ public static final Comparator<String> CASE_INSENSITIVE_ORDER
 
 ```
 
-### 55，设计模式的原则
+### 56 设计模式的原则
 
-* 1) 单一职责原则
-* 2) 接口隔离原则
-* 3) 依赖倒转(倒置)原则
-* 4) 里氏替换原则
-* 5) 开闭原则
-* 6) 迪米特法则
-* 7) 合成复用原则
+* 单一职责原则
+  * 一个类应该只有一个发生变化的原因
+* 接口隔离原则
+  * 尽量将臃肿庞大的接口拆分成更小的和更具体的接口，让接口中只包含客户感兴趣的方法
+* 依赖倒转(倒置)原则
+  * 依赖抽象
+* 里氏替换原则
+  * 继承必须确保超类所拥有的性质在子类中仍然成立。
+  * 如果S是T的子类型，那么所有T类型的对象，都可以在不破坏程序的情况下被S类型的对象替换
+* 开闭原则
+  * 对扩展开放，对修改关闭
+  * 应该用抽象定义结构，用具体实现扩展细节
+* 迪米特法则
+  * 最少知道原则：不要有过多的耦合关系，保持最少的关联性
+* 合成复用原则
 
-### 56，ArrayList的toString()方法
+### 57 ArrayList的方法
+
+* toString()
 
 ```java
 List<Integer> list = new ArrayList<>();
@@ -933,3 +943,63 @@ public String toString() {
   }
 }
 ```
+
+* grow(int minCapacity)
+
+  ```java
+  public boolean add(E e) {
+      ensureCapacityInternal(size + 1);  // Increments modCount!!
+      elementData[size++] = e;
+      return true;
+  }
+
+  private void ensureCapacityInternal(int minCapacity) {
+      ensureExplicitCapacity(calculateCapacity(elementData, minCapacity));
+  }
+
+  private static int calculateCapacity(Object[] elementData, int minCapacity) {
+      if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
+          return Math.max(DEFAULT_CAPACITY, minCapacity);
+      }
+      return minCapacity;
+  }
+
+  private void ensureExplicitCapacity(int minCapacity) {
+      modCount++;
+
+      // overflow-conscious code
+      if (minCapacity - elementData.length > 0)
+          grow(minCapacity);
+  }
+  private void grow(int minCapacity) {
+      // overflow-conscious code
+      int oldCapacity = elementData.length;
+      int newCapacity = oldCapacity + (oldCapacity >> 1);
+      if (newCapacity - minCapacity < 0)
+        newCapacity = minCapacity;
+      if (newCapacity - MAX_ARRAY_SIZE > 0)            
+        newCapacity = hugeCapacity(minCapacity);
+      // minCapacity is usually close to size, so this is a win:
+      elementData = Arrays.copyOf(elementData, newCapacity);
+  }
+  ```
+
+### 58 用户态和内核态 ?
+
+* 操作系统
+  任何计算机系统都包含一个名为操作系统的基本程序集合。在这个集合里，最重要的程序称为内核。当操作系统启动时，内核被装载到RAM中，内核中包含了系统运行所必不可少的很多核心进程。
+* 2个主要目标
+  * 与硬件部分交互，为包含在硬件平台上的所有低层可编程部件提供服务
+  * 为运行在计算机系统上的应用程序（即所谓的用户程序）提供执行环境
+* MS-DOS：允许所有的用户程序都直接与硬件部分进行交互
+* 类Unix系统：把与计算机物理组织相关的所有低层细节都对用户运行的程序隐藏起来。当程序想要使用硬件资源时，必须向操作系统发出一个请求。内核对这个请求进行评估，如果允许使用这个资源，内核代表应用程序与相关的硬件部分进行交互
+* 用户态和内核态  
+  为了实现这种机制，现代操作系统依靠特殊的硬件特性来禁止用户程序直接与低层硬件部分进行交互，或者禁止直接访问任意的物理地址。特别地，硬件为CPU引入了至少2种不同的执行模式：用户程序的非特权模式和内核的特权模式
+  * 用户态：用户程序的非特权模式
+  * 内核态：内核的特权模式
+
+### 59 对象晋升老年代的年龄阈值
+
+* 可以通过参数-XX:MaxTenuringThreshold设置
+* 默认为15
+  对象通常在Eden区诞生，如果经过第一次Minor GC后仍然存活，并且能被Survivor容纳的话，该对象会被移动到Survivor空间中，并且将其对象年龄设为1岁。对象在Survivor区中每熬过一次Minor GC，年龄就增加1岁，当它的年龄增加到一定程度（默认为15），就会被晋升到老年代中。

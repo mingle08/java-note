@@ -2,7 +2,7 @@
 
 ## 序号（0~30）
 
-### 1，mybatis调试sql
+### 1 mybatis调试sql
 
 ```java
 // 一路F7，进入CachingExecutor类
@@ -186,7 +186,7 @@ public <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBoun
 
 ![PreparedStatementHandler](assets/PreparedStatementHandler.png)
 
-### 2，resultMap对于联合主键怎么写
+### 2 resultMap对于联合主键怎么写
 
 答案是写2个id列：
 
@@ -417,3 +417,7 @@ private void createRowKeyForMappedProperties(ResultMap resultMap, ResultSetWrapp
     }
 }
 ```
+
+### 3 mybatis源码中有一处单词拼写错误
+
+![mybatis源码单词typo](assets/mybatis源码单词typo.png)

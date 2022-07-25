@@ -2,7 +2,7 @@
 
 ## 序号（1~30）
 
-### 1，CountDownLatch与CyclicBarrier的区别
+### 1 CountDownLatch与CyclicBarrier的区别
 
 (1) CountDownLatch适用于所有线程通过某一点后通知方法,而CyclicBarrier则适合让所有线程在同一点同时执行
 (2) CountDownLatch利用继承AQS的共享锁来进行线程的通知,利用CAS来进行--,而CyclicBarrier则利用ReentrantLock的Condition来阻塞和通知线程
@@ -49,7 +49,7 @@ public class CyclicBarrier {
 }
 ```
 
-### 2，jdk源码中类似的代码
+### 2 jdk源码中类似的代码
 
 （1）HashMap中的tableSizeFor方法
 
@@ -78,7 +78,20 @@ static final int tableSizeFor(int cap) {
 
 经过多次右移之后再进行 | 运算，结果是最右边四位都是1
 n = 15
-n + 1 = 16
+n + 1 = 16，即 0001 0000
+
+如果cap为7，n 就是 6
+6       0000 0110
+>>> 1   0000 0011
+|=      0000 0111
+>>> 2   0000 0001
+|=      0000 0111
+>>> 4   0000 0000
+|=      0000 0111
+>>> 8   0000 0000
+|=      0000 0111
+
+再加1，就变成 0000 1000
 ```
 
 （2）Integer中的highestOneBit方法
@@ -193,16 +206,26 @@ public static <T,U> T[] copyOf(U[] original, int newLength, Class<? extends T[]>
 // Array.class在反射包(java.lang.reflect)中
 ```
 
-### 3，HashMap允许null键和null值吗？
+### 3 HashMap
 
-允许。因为key唯一，所以只能有一个null键，而value为null，可以有多个
+#### 3.1 HashMap与HashTable的区别
 
-### 4，HashMap中能保证元素有序的是哪个Map？
+* 线程是否安全
+  HashMap 是非线程安全的，Hashtable 是线程安全的,因为 Hashtable 内部的方法基本都经过synchronized 修饰。（如果你要保证线程安全的话就使用 ConcurrentHashMap 吧！）；
+* 效率： 因为线程安全的问题，HashMap 要比 Hashtable 效率高一点。另外，Hashtable 基本被淘汰，不要在代码中使用它；
+* 对 Null key 和 Null value 的支持
+  HashMap 可以存储 null 的 key 和 value，但 null 作为键只能有一个，null 作为值可以有多个；Hashtable 不允许有 null 键和 null 值，否则会抛出 NullPointerException。
+* 初始容量大小和每次扩充容量大小的不同 ： ① 创建时如果不指定容量初始值，Hashtable 默认的初始大小为 11，之后每次扩充，容量变为原来的 2n+1。HashMap 默认的初始化大小为 16。之后每次扩充，容量变为原来的 2 倍。② 创建时如果给定了容量初始值，那么 Hashtable 会直接使用你给定的大小，而 HashMap 会将其扩充为 2 的幂次方大小（HashMap 中的tableSizeFor()方法保证，下面给出了源代码）。也就是说 HashMap 总是使用 2 的幂作为哈希表的大小,后面会介绍到为什么是 2 的幂次方。
+* 底层数据结构： JDK1.8 以后的 HashMap 在解决哈希冲突时有了较大的变化，当链表长度大于阈值（默认为 8）（将链表转换成红黑树前会判断，如果当前数组的长度小于 64，那么会选择先进行数组扩容，而不是转换为红黑树）时，将链表转化为红黑树，以减少搜索时间。Hashtable 没有这样的机制。
 
+#### 3.2 HashMap中能保证元素有序的是哪个Map？
+
+*LinkedHashMap*
 怎么保证有序？
 查看源码，我们也会发现，linkedHashMap只是维护了一个链表Entry，并没有put、remove方法的具体实现。
 
 ```java
+    // java.util.LinkedHashMap
     static class Entry<K,V> extends HashMap.Node<K,V> {
         Entry<K,V> before, after;
         Entry(int hash, K key, V value, Node<K,V> next) {
@@ -225,7 +248,7 @@ public static <T,U> T[] copyOf(U[] original, int newLength, Class<? extends T[]>
     The iteration ordering method for this linked hash map: true for access-order, false for insertion-order.
     true 访问顺序，false 插入顺序
     */
-final boolean accessOrder;
+    final boolean accessOrder;
 ```
 
 添加元素要调用父类的put方法：
@@ -326,7 +349,7 @@ public LinkedHashMap(int initialCapacity,
 }
 ```
 
-### 5，HashMap的put方法和扩容机制
+#### 3.3 HashMap的put方法和扩容机制
 
 * put方法
 
@@ -450,7 +473,23 @@ if (hiTail != null) {
 }
 ```
 
-### 6，HashMap 1.7和1.8的区别
+### 4 接口和抽象类有什么共同点和区别？
+
+* 共同点 ：
+  * 都不能被实例化。
+  * 都可以包含抽象方法。
+  * 都可以有默认实现的方法（Java 8 可以用 default 关键字在接口中定义默认方法）。
+
+* 区别 ：
+  * 接口主要用于对类的行为进行约束，你实现了某个接口就具有了对应的行为。抽象类主要用于代码复用，强调的是所属关系（比如说我们抽象了一个发送短信的抽象类，）。
+  * 一个类只能继承一个类，但是可以实现多个接口。
+  * 接口中的成员变量只能是 public static final 类型的，不能被修改且必须有初始值，而抽象类的成员变量默认 default，可在子类中被重新定义，也可被重新赋值。
+
+### 5 对象头与synchronized
+
+![synchronized](assets/synchronized-optimization.png)
+
+### 6 HashMap 1.7和1.8的区别
 
 （1）数据结构
 
@@ -484,7 +523,7 @@ if (hiTail != null) {
 
 原文链接：<https://blog.csdn.net/a718515028/article/details/108265496>
 
-### 7，Happens-Before规则
+### 7 Happens-Before规则
 
 （1）oracle官方文档：[Threads and Locks](https://docs.oracle.com/javase/specs/jls/se6/html/memory.html) 
 （2）文档关于Happens-Before内容
@@ -541,7 +580,7 @@ The semantics of operations other than inter-thread actions, such as reads of ar
 （3）volatile
 <https://blog.csdn.net/weixin_34384681/article/details/88840660>
 
-### 8，两个质数1231与1237
+### 8 两个质数1231与1237
 
 在Boolean.java中发现其hashCode方法的返回值，true返回1231，false返回1237，为什么选这两个质数？
 
@@ -551,7 +590,7 @@ public static int hashCode(boolean value) {
 }
 ```
 
-### 9，死锁
+### 9 死锁
 
 （1）产生死锁必须具备以下四个条件：
 a. 互斥条件：该资源任意一个时刻只由一个线程占用。
@@ -565,72 +604,63 @@ b. **破坏请求与保持条件** ：一次性申请所有的资源。
 c. **破坏不剥夺条件** ：占用部分资源的线程进一步申请其他资源时，如果申请不到，可以主动释放它占有的资源。
 d. **破坏循环等待条件** ：依靠按序申请资源来预防。按某一顺序申请资源，释放资源则反序释放。破坏循环等待条件。
 
-### 10，线程池构造函数的参数
+### 10 AQS
+
+Subclasses should be defined as non-public internal helper classes that are used to implement the synchronization properties of their enclosing class.
+
+To use this class as the basis of a synchronizer, redefine the following methods, as applicable, by inspecting and/or modifying the synchronization state using getState, setState and/or compareAndSetState:
+  tryAcquire
+  tryRelease
+  tryAcquireShared
+  tryReleaseShared
+  isHeldExclusively
 
 ```java
-/** 
-FixedThreadPool和SingleThreadPool使用的队列是LinkedBlockingQueue,这是无界队列，允许请求的最大长度为：Integer.MAX_VALUE，
-可能会堆积大量的请求，从而导致OOM
-*/
-public static ExecutorService newFixedThreadPool(int nThreads) {
-    return new ThreadPoolExecutor(nThreads, nThreads, 
-                                  0L, TimeUnit.MILLISECONDS, 
-                                  new LinkedBlockingQueue<Runnable>());
+protected boolean tryAcquire(int arg) {
+    throw new UnsupportedOperationException();
 }
 
-public static ExecutorService newSingleThreadExecutor() {
-    return new FinalizableDelegatedExecutorService
-        (new ThreadPoolExecutor(1, 1,
-                                0L, TimeUnit.MILLISECONDS,
-                                new LinkedBlockingQueue<Runnable>()));
+protected boolean tryRelease(int arg) {
+    throw new UnsupportedOperationException();
 }
 
-/**
-看看LinkedBlockingQueue的容量大小：Integer.MAX_VALUE
-*/
-public LinkedBlockingQueue() {
-    this(Integer.MAX_VALUE);
+protected int tryAcquireShared(int arg) {
+    throw new UnsupportedOperationException();
 }
 
-
-
-/**
-CachedThreadPool和ScheduleThreadPool允许的创建线程数量为：Integer.MAX_VALUE，可能会创建大量的线程，从而导致OOM
-*/
-public static ExecutorService newCachedThreadPool() {
-    return new ThreadPoolExecutor(0, Integer.MAX_VALUE,
-                                      60L, TimeUnit.SECONDS,
-                                      new SynchronousQueue<Runnable>());
+protected boolean tryReleaseShared(int arg) {
+    throw new UnsupportedOperationException();
 }
 
-public static ScheduledExecutorService newScheduledThreadPool(int corePoolSize) {
-    return new ScheduledThreadPoolExecutor(corePoolSize);
+protected boolean isHeldExclusively() {
+    throw new UnsupportedOperationException();
 }
 
-// ScheduledThreadPoolExecutor类
-public ScheduledThreadPoolExecutor(int corePoolSize) {
-    super(corePoolSize, Integer.MAX_VALUE, 0, NANOSECONDS,
-          new DelayedWorkQueue());
-}
+private static final Unsafe unsafe = Unsafe.getUnsafe();
+private static final long stateOffset;
+private static final long headOffset;
+private static final long tailOffset;
+private static final long waitStatusOffset;
+private static final long nextOffset;
 
-/**
-线程池参数分析
-corePoolSize : 核心线程数
-maximumPoolSize : 最大线程数
-keepAliveTime : 非核心线程的超时时长,如果非核心线程闲置时间超过keepAliveTime之后，就会被回收。如果设置allowCoreThreadTimeOut为true，则该参数也表示                核心线程的超时时长
-unit : 超时时长单位
-workQueue : 线程池中的任务队列，该队列主要用来存储已经被提交但是尚未执行的任务
-handler : 拒绝策略
-*/
-public ThreadPoolExecutor(int corePoolSize,
-        int maximumPoolSize,
-        long keepAliveTime,
-        TimeUnit unit,
-        BlockingQueue<Runnable> workQueue,
-        RejectedExecutionHandler handler)
+static {
+    try {
+        stateOffset = unsafe.objectFieldOffset
+            (AbstractQueuedSynchronizer.class.getDeclaredField("state"));
+        headOffset = unsafe.objectFieldOffset
+            (AbstractQueuedSynchronizer.class.getDeclaredField("head"));
+        tailOffset = unsafe.objectFieldOffset
+            (AbstractQueuedSynchronizer.class.getDeclaredField("tail"));
+        waitStatusOffset = unsafe.objectFieldOffset
+            (Node.class.getDeclaredField("waitStatus"));
+        nextOffset = unsafe.objectFieldOffset
+            (Node.class.getDeclaredField("next"));
+
+    } catch (Exception ex) { throw new Error(ex); }
+}
 ```
 
-### 11，单例模式，为什么枚举型单例是安全的？
+### 11 单例模式，为什么枚举型单例是安全的？
 
 因为反射包下的Constructor中的newInstance方法，不允许通过反射获取枚举的实例
 
@@ -672,7 +702,7 @@ static final int ENUM      = 0x00004000;
 static final int MANDATED  = 0x00008000;
 ```
 
-### 12，HashMap中转化为红黑树的阈值为什么是8，退化的阈值为什么是6？
+### 12 HashMap中转化为红黑树的阈值为什么是8，退化的阈值为什么是6？
 
 ```java
 public class HashMap<K,V> extends AbstractMap<K,V>
@@ -718,7 +748,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     static final int UNTREEIFY_THRESHOLD = 6;
 ```
 
-### 13，双亲委派模型
+### 13 双亲委派模型
 
 （1）三层类加载器
 a. 启动类加载器（Bootstrap Class Loader）：
@@ -830,7 +860,7 @@ public final class ServiceLoader<S>
 
 c. 用户对程序动态性的追求，OSGi实现模块化热部署，它自定义的类加载器机制
 
-### 14，轻量级锁
+### 14 轻量级锁
 
 工作过程：在代码即将进入同步块的时候，如果此同步对象没有被锁定（锁标志位为“01”状态），虚拟机首先将在当前线程的栈帧中建立一个名为锁记录（Lock Record）的空间，用于存储对象目前的mark word的拷贝（Displaced Mark Word）。
 
@@ -840,7 +870,7 @@ c. 用户对程序动态性的追求，OSGi实现模块化热部署，它自定�
 
 （2）如果更新失败，那就意味着至少存在一条线程与当前线程竞争获取该对象的锁。虚拟机首先会检查对象的Mark Word是否指向当前线程的栈帧，如果是，说明当前线程已经拥有了这个对象的锁，那直接进入同步块继续执行就可以了，否则说明这个锁对象已经被其他线程抢占了。如果出现2条以上的线程争用同一个锁的情况，那轻量级锁就不再有效，必须膨胀为重量级锁，锁标志的状态值变为“10”
 
-### 15，AtomicInteger 线程安全原理
+### 15 AtomicInteger 线程安全原理
 
 ```java
 public class AtomicInteger extends Number implements java.io.Serializable {
@@ -870,7 +900,7 @@ public class AtomicInteger extends Number implements java.io.Serializable {
 }
 ```
 
-### 16，docker的优势
+### 16 docker的优势
 
 原文链接：<https://blog.csdn.net/qq_37527715/article/details/79878891>
 （1）简化配置
@@ -897,7 +927,7 @@ Docker通过创建进程的容器，不必重新启动操作系统，几秒内�
 （8）环境统一
 docker将容器打包成镜像，创建符合docker hub规范的镜像，上传进个人的私有docker hub，转换环境时直接pull即可，最大程   度的保证了开发环境，正式环境统一
 
-### 17，fail-fast机制与fail-safe机制
+### 17 fail-fast机制与fail-safe机制
 
 （1）fail-fast
 
@@ -1043,7 +1073,7 @@ static class HashMapSpliterator<K,V> {
 （2）fail-safe ( 安全失败 )
 java.util.concurrent包下的容器都是安全失败的，可以在多线程下并发使用，并发修改。常见的的使用fail-safe方式遍历的容器有ConcerrentHashMap和CopyOnWriteArrayList等。采用安全失败机制的集合容器，在遍历时不是直接在集合内容上访问，而是先copy原有集合内容，在copy的新集合上进行遍历，所以在遍历过程中对原集合所作的修改并不能被迭代器检测到，所以不会触发ConcurrentModificationException
 
-### 18，ThreadLocal与SimpleDateFormat
+### 18 ThreadLocal与SimpleDateFormat
 
 ![img.png](assets/img_0_SimpleDateFormat使用ThreadLocal.png)
 
@@ -1059,11 +1089,11 @@ ThreadLocal正确的使用方法：
 （1）每次使用完ThreadLocal都手动调用remove()方法清除数据；
 （2）将ThreadLocal变量定义成private static，这样就一直存在ThreadLocal强引用，也就能保证任何时候都能通过ThreadLocal的弱引用访问到Entry中的value，进而清除掉
 
-### 19，进程间的通信
+### 19 进程间的通信
 
 请看这篇博客：<https://www.jianshu.com/p/c1015f5ffa74>
 
-### 20，并发模型
+### 20 并发模型
 
 （1）共享内存
 比如Java的加锁
@@ -1072,9 +1102,9 @@ ThreadLocal正确的使用方法：
 对线程间共享状态的各种操作都被封装在线程之间传递的消息中，这通常要求：发送消息时对状态进行复制，并且在消息传递的边界上交出这个状态的所有权。从逻辑上看，这个操作与共享内存系统中执行的原子更新操作相同，
 但从物理上来看则非常不同。由于需要执行复制操作，所以大多数消息传递的实现在性能上并不优越，但线程中的状态管理工作通常会变得更为简单。
 
-### 21，垃圾回收器CMS，G1的区别
+### 21 垃圾回收器CMS，G1的区别
 
-### 22，GC Root对象有哪些
+### 22 GC Root对象有哪些
 
 （1）虚拟机栈（栈桢中的本地变量表）中引用的对象
 
@@ -1090,7 +1120,7 @@ ThreadLocal正确的使用方法：
 
 （7）反映Java虚拟机内部的JMXBean, JVMTI中注册的回调、本地代码缓存等
 
-### 23，Java对象的锁池和等待池
+### 23 Java对象的锁池和等待池
 
 Java平台中，因为有内置锁的机制，每个对象都可以承担锁的功能。Java虚拟机会为每个对象维护两个“队列”（姑且称之为“队列”，尽管它不一定符合数据结构上队列的“先进先出”原则）：
 一个叫Entry Set（入口集）;
@@ -1108,7 +1138,7 @@ Java平台中，因为有内置锁的机制，每个对象都可以承担锁的�
 作者：此间有道
 链接：<https://www.jianshu.com/p/a3f86c89eb54>
 
-### 24，并发的三大特性
+### 24 并发的三大特性
 
 （1）原子性
 java内存模型保证原子性：lock, unlock, synchronized
@@ -1126,7 +1156,7 @@ volatile关键字本身就包含了禁止指令重排序的语义
 b. synchronized
 则是由“一个变量在同一个时刻只允许一条线程对其进行lock操作”这条规则获得的，这个规则决定了持有同一个锁的两个同步块只能串行地进入
 
-### 25，java对象的二分模型
+### 25 java对象的二分模型
 
 otSpot采用Oop-Klass模型来表示Java对象，其中Klass对应着Java对象的类型（Class），而Oop则对应着Java对象的实例（Instance）。
 
@@ -1297,7 +1327,7 @@ C++多态类中的虚函数表是Compile-Time还是Run-Time建立的？
 
 标准答案：虚拟函数表是在编译时期就建立的，各个虚拟函数这是被组织成了一个虚拟函数的入口地址的数组，而对象的隐藏成员---虚拟函数表指针，是在运行期----也就是构造函数被调用时进行初始化的，这是实现多态的关键。
 
-### 26，isAssignableFrom()方法
+### 26 isAssignableFrom()方法
 
 ```java
 父类.class.isAssignableFrom(子类.class)
@@ -1305,7 +1335,7 @@ C++多态类中的虚函数表是Compile-Time还是Run-Time建立的？
 子类实例 instanceof 父类类型
 ```
 
-### 27，线程池submit不抛异常的原因
+### 27 线程池submit不抛异常的原因
 
 ![线程池submit](assets/img_19_线程池的相关类继承关系.png)
 
@@ -1562,11 +1592,11 @@ protected void setException(Throwable t) {
 }
 ```
 
-### 28，HTTP消息结构
+### 28 HTTP消息结构
 
 ![img_1.png](assets/img_1_http消息结构.png)
 
-### 29，部分linux命令
+### 29 部分linux命令
 
 （1）ping命令使用的是什么协议？ ICMP
 （2）kill与kill -9的区别，kill命令的底层是什么？
@@ -1576,7 +1606,7 @@ protected void setException(Throwable t) {
     ![linux信号](assets/linux-signals.png)
 （3）查询端口的命令是什么？ netstat
 
-### 30，TCP相关
+### 30 TCP相关
 
 （1）TCP释放连接，哪一方处理time_await状态？
 

@@ -39,6 +39,7 @@ git clone git@gitee.com:mingle08/java-note.git
   |⌘L|跳转到行号|Ctrl + G|
   |⌥space| 查看光标处的方法、类的定义|/|
   |⌘⇧F|全局查找|Ctrl + Shift + F|
+  |⌥⇧↓ / ⌥⇧↑|移动当前行向下/向上|Ctrl + Shift + ↓ / ↑|
 
 * visual studio code
   |MAC|名称|WINDOWS|
@@ -56,8 +57,13 @@ git clone git@gitee.com:mingle08/java-note.git
   |⌥⇧↓ / ⌥⇧↑|快速复制一行||
   |⌥↓ / ⌥↑|移动当前行向下/向上||
   |⌥⇧A|切换块注释||
+  |⌘P|查找项目文件|ctrl + P|
+  |⌘P #|查找jdk源码文件|ctrl + P #|
   
   原文链接：<https://blog.csdn.net/m0_64346035/article/details/124192655>
+
+![vscode查找项目文件](assets/vscode搜索文件-项目文件.png)
+![vscode查看jdk源码文件](assets/vscode搜索文件-jdk.png)
 
 * 浏览器
   光标定位在地址栏    ⌘L

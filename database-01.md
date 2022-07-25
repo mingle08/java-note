@@ -2,13 +2,13 @@
 
 ## 序号（0~30）
 
-### 1，如何保证Redis与mysql缓存一致性
+### 1 如何保证Redis与mysql缓存一致性
 
 * 延迟双删：先删除redis缓存，再更新mysql，然后删除redis缓存
 * 先更新mysql，再删除缓存，如果删除失败，发到mq，消费mq消息删除缓存
 * 使用canal，伪装成mysql的一台从机，将redis删除的消息发送到mq
 
-### 2，mysql体系结构
+### 2 mysql体系结构
 
 ![主从复制.png](assets/mysql体系结构.png)
 
@@ -31,7 +31,7 @@
 ![查询sql执行流程](assets/查询sql执行流程.png)
 参考：<https://blog.csdn.net/qq_42239520/article/details/122145983>
 
-### 3，数据库范式
+### 3 数据库范式
 
 （1）三范式（Normal Form）
 1NF:字段不可分;
@@ -56,7 +56,7 @@ BCNF : Boyce-Codd Normal Form可以看作更好的3NF。在满足第二第三范
 域：属性的取值范围
 分量：元组中的一个属性值
 
-### 4，什么是MVCC
+### 4 什么是MVCC
 
 * 概念：
   MVCC是Muiti-Version Concurrency Control的简写，即多版本并发控制：读取数据时通过一种类似快照的方式将数据保存下来，这样读锁和写锁就不冲突了，不同的事务session会看到自己特定版本的数据，版本链
@@ -81,7 +81,7 @@ BCNF : Boyce-Codd Normal Form可以看作更好的3NF。在满足第二第三范
   * 如果在readview的左边（比readview小），可以访问（在左边意味着该事务已经提交）
   * 如果在readview的右边（比readview大），或者在readview区间内，不可以访问，获取roll_pointer，取上一版本重新对比（在右边意味着，该事务在readview生成之后出现；在readview区间内意味着该事务还未提交）
 
-### 5，mysql主从同步原理
+### 5 mysql主从同步原理
 
 ![主从复制.png](assets/img_15_mysql主从复制.png)
 （1）有三个线程：binlog dump thread（master）、I/O thread（slave）和sql thread（slave）
@@ -119,7 +119,7 @@ relay_log_info_repository=TABLE
 relay_log_recovery=ON
 ```
 
-### 6，mysql的事务是怎么实现的？
+### 6 mysql的事务是怎么实现的？
 
 <https://www.cnblogs.com/ffdsj/p/12266539.html>
 
@@ -128,7 +128,7 @@ relay_log_recovery=ON
 （3）隔离性：使用锁以及MVCC,运用的优化思想有读写分离，读读并行，读写并行；
 （4）一致性：通过回滚，以及恢复，和在并发环境下的隔离做到一致性。
 
-### 7，mysql的回表查询
+### 7 mysql的回表查询
 
 （1）主键索引和普通索引的查询区别
 摘自b站：bobby的技术笔记
@@ -155,20 +155,20 @@ c. 根据RowID的排序顺序来访问实际的数据文件
 （4）索引失效
 参考：<https://www.modb.pro/db/89169>
 
-### 8，名词解释
+### 8 名词解释
 
 （1）OLAP  联机分析处理  数据仓库  hive                     对历史数据进行分析，产生决策性的影响
 （2）OLTP  联机事务处理  数据库    mysql/oracle/db2/...    支撑业务系统，在很短时间内产生结果
 （3）ISAM  索引顺序访问方法（ISAM, Indexed Sequential Access Method）
 
-### 9，mysql内部的XA事务
+### 9 mysql内部的XA事务
 
-* 在mysql数据库中还存在另外一种分布式事务，其在存储引擎与插件之间，又或者在存储引擎与存储引擎之间，称之炎内部XA事务
+* 在mysql数据库中还存在另外一种分布式事务，其在存储引擎与插件之间，又或者在存储引擎与存储引擎之间，称之为内部XA事务
 * 最为常见的内部XA事务存在于binlog与InnoDB存储引擎之间：mysql redo log的二阶段提交
   参考：<https://www.cnblogs.com/kiwi-deng/p/13641783.html>
   ![redo log二阶段提交.png](assets/img_12_redo%20log二阶段提交.png)
 
-### 10，事务的2PC与3PC的区别
+### 10 事务的2PC与3PC的区别
 
 * XA 是指由 X/Open 组织提出的分布式事务处理的规范.
 * XA 规范主要定义了事务管理器(Transaction Manager)和局部资源管理器(Local Resource Manager)之间的接口。
@@ -182,7 +182,7 @@ c. 根据RowID的排序顺序来访问实际的数据文件
 2PC只有协调者有超时机制，超时后，发送回滚指令
 3PC 协调者和参与者都有超时机制
 
-### 11，TCC与XA的区别
+### 11 TCC与XA的区别
 
 （1）XA是资源层面的分布式事务，强一致性，在两阶段提交的整个过程中，一直会持有资源的锁。
 
@@ -208,17 +208,17 @@ c. 根据RowID的排序顺序来访问实际的数据文件
 
 参考：<http://www.tianshouzhi.com/api/tutorials/distributed_transaction/388>
 
-### 12，缓存的穿透，击穿，雪崩
+### 12 缓存的穿透，击穿，雪崩
 
 （1）穿透：缓存中不存在，数据库中不存在，高并发，少量key
 （2）击穿：缓存中不存在，数据库中存在，高并发，少量key过期
 （3）雪崩：缓存中不存在，数据库中存在，高并发，大量key在同一时间过期
 
-### 13，redis主从复制
+### 13 redis主从复制
 
 ![redis主从复制](assets/img_14_redis主从复制.png)
 
-### 14，MySQL各版本，对于add Index的处理方式是不同的，主要有三种
+### 14 MySQL各版本，对于add Index的处理方式是不同的，主要有三种
 
 （1）Copy Table方式
 
@@ -239,7 +239,7 @@ c. 根据RowID的排序顺序来访问实际的数据文件
 
 摘自博客：<https://www.jb51.net/article/75217.htm>
 
-### 15，缓存雪崩、缓存穿透、缓存击穿
+### 15 缓存雪崩、缓存穿透、缓存击穿
 
 * 缓存雪崩
   * 概念：同一时间缓存大面积失效，导致后面的请求都会落到数据库上，造成数据库短时间内承受大量请求而崩掉
@@ -264,7 +264,7 @@ c. 根据RowID的排序顺序来访问实际的数据文件
     * 设置热点数据永远不过期
     * 互斥锁
 
-### 16，SQL 标准定义了哪些事务隔离级别?
+### 16 SQL 标准定义了哪些事务隔离级别?
 
 SQL 标准定义了四个隔离级别：
 
@@ -280,7 +280,7 @@ SQL 标准定义了四个隔离级别：
 |REPEATABLE-READ|×|×|√|
 |SERIALIZABLE|×|×|×|
 
-### 17，InnoDB 有哪几类行锁？
+### 17 InnoDB 有哪几类行锁？
 
 MySQL InnoDB 有三种行锁的算法：
 
@@ -288,14 +288,14 @@ MySQL InnoDB 有三种行锁的算法：
 * 间隙锁（Gap Lock） ：锁定一个范围，不包括记录本身。
 * 临键锁（Next-key Lock） ：Record Lock+Gap Lock，锁定一个范围，包含记录本身。记录锁只能锁住已经存在的记录，为了避免插入新记录，需要依赖间隙锁。
   
-### 18，InnoDB 的默认隔离级别
+### 18 InnoDB 的默认隔离级别
 
 REPEATABLE-READ（可重读），可以解决幻读问题发生的，主要有下面两种情况：
 
 * 快照读 ：由 MVCC 机制来保证不出现幻读。
 * 当前读 ： 使用 Next-Key Lock 进行加锁来保证不出现幻读。
 
-### 19，Redis分布式锁
+### 19 Redis分布式锁
 
 * 加锁的正确方式
 
@@ -463,7 +463,7 @@ protected RFuture<Boolean> unlockInnerAsync(long threadId) {
 }
 ```
 
-### 20，索引失效有哪些情况
+### 20 索引失效有哪些情况
 
 * （1）函数
 * （2）in, or, is null, is not null
@@ -472,4 +472,14 @@ protected RFuture<Boolean> unlockInnerAsync(long threadId) {
 * （5）隐式转换
 * （6）!=, <>
 * （7）字符串不加单引号
-* （8）select * 
+* （8）select *
+
+### 21 PostgreSQL的特点
+
+* PostgreSQL是一个功能强大的开源的对象关系数据库管理系统(ORDBMS)
+* 特点
+  * 跨平台
+  * 支持文本、图像、视频、声音等
+  * 支持大量的主流编程语言
+  * 支持SQL的许多功能，例如复杂的SQL查询，子查询，外键，触发器，视图，视图，多进程并发控制(MVCC)、异步复制。
+  * 在PostgreSQL中，表可以设置为从“父”表继承其特征

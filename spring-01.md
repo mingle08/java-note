@@ -2,7 +2,7 @@
 
 ## 序号（1~30）
 
-### 1，@Resource注解是在哪儿解析的
+### 1 @Resource注解是在哪儿解析的
 
 ```java
 // CommonAnnotationBeanPostProcessor.java
@@ -269,7 +269,7 @@ with no special requirements other than the type having to match.
 */
 ```
 
-### 2，BeanFactory与FactoryBean
+### 2 BeanFactory与FactoryBean
 
 （1）BeanFactory 是接口，提供了IOC容器最基本的形式，给具体的IOC容器的实现提供了规范，功能非常复杂。
 （2）FactoryBean 也是接口，为IOC容器中Bean的实现提供了更加灵活的方式，FactoryBean在IOC容器的基础上给Bean的实现加上了一个简单的
@@ -345,7 +345,7 @@ public class SchedulerFactoryBean extends SchedulerAccessor implements FactoryBe
 }
 ```
 
-### 3，Spring的事务传播机制
+### 3 Spring的事务传播机制
 
 查看Spring的Propagation枚举类：
 
@@ -428,7 +428,7 @@ int TRANSACTION_REPEATABLE_READ  = 4;
 int TRANSACTION_SERIALIZABLE     = 8;
 ```
 
-### 4，Spring事务什么时候会失效
+### 4 Spring事务什么时候会失效
 
 Spring事务的原理是AOP，进行了切面增强，那么失效的根本原因就是这个AOP不起作用了。常见情况有以下几种：
 （1）自调用
@@ -478,7 +478,7 @@ public abstract class AopContext {
 （4）没有被Spring管理
 （5）异常被吃掉，事务不会回滚（或者抛出的异常没有被定义，默认为RuntimeException）
 
-### 5，Spring三级缓存
+### 5 Spring三级缓存
 
 * singletonObjects 一级缓存，用于保存实例化、注入、初始化完成的bean实例
 * earlySingletonObjects 二级缓存，用于保存实例化完成的bean实例
@@ -486,7 +486,7 @@ public abstract class AopContext {
 
 摘自博客：[spring: 我是如何解决循环依赖的？ - Mars独行侠 - 博客园 (cnblogs.com)](https://www.cnblogs.com/wjxzs/p/14239052.html)
 
-### 6，Spring中的DependsOn注解
+### 6 Spring中的DependsOn注解
 
 AbstractBeanFactory中DependsOn相关代码：
 
@@ -519,7 +519,7 @@ try {
 }
 ```
 
-### 7，Spring的bean加载
+### 7 Spring的bean加载
 
 * 获取Bean
 
@@ -691,11 +691,32 @@ protected Object doCreateBean(final String beanName, final RootBeanDefinition mb
     }
 
     try {
+        // 7 注册DisposableBean
         this.registerDisposableBeanIfNecessary(beanName, bean, mbd);
+        // 8 完成创建并返回
         return exposedObject;
     } catch (BeanDefinitionValidationException var16) {
         throw new BeanCreationException(mbd.getResourceDescription(), beanName, "Invalid destruction signature", var16);
     }
+}
+
+protected Object getEarlyBeanReference(String beanName, RootBeanDefinition mbd, Object bean) {
+    Object exposedObject = bean;
+    if (bean != null && !mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
+        for (BeanPostProcessor bp : getBeanPostProcessors()) {
+            /* 实现SmartInstantiationAwareBeanPostProcessor接口的有2大类
+            而@Autowired的处理类和AOP的处理类分别处于不同的分支
+            */
+            if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
+                SmartInstantiationAwareBeanPostProcessor ibp = (SmartInstantiationAwareBeanPostProcessor) bp;
+                exposedObject = ibp.getEarlyBeanReference(exposedObject, beanName);
+                if (exposedObject == null) {
+                    return null;
+                }
+            }
+        }
+    }
+    return exposedObject;
 }
 
 
@@ -728,7 +749,10 @@ protected void removeSingleton(String beanName) {
 }
 ```
 
-### 8，Spring的依赖注入（DI）
+![addSingletonFactory](assets/addSingletonFactory.png)
+![SmartInstantiationXXXProcessor](assets/SmartInstantiationXXXProcessor.png)
+
+### 8 Spring的依赖注入（DI）
 
 #### Constructor-based Dependency Injection
 
@@ -750,18 +774,22 @@ Setter injection should primarily only be used for optional dependencies that ca
 
 Use the DI style that makes the most sense for a particular class. Sometimes, when dealing with third-party classes for which you do not have the source, the choice is made for you. For example, if a third-party class does not expose
 
-### 9，Spring启动流程
+### 9 Spring启动流程
 
 （1）在创建Spring容器，即启动Spring时：
-a. 扫描xml文件，得到所有的BeanDefinition对象，并保存在一个Map中
-b. 筛选出非懒加载的单例BeanDefinition进行创建，对于多例不需要在启动过程中创建，会在每次获取Bean时利用BeanDefinition创建
-c. 利用BeanDefinition创建Bean就是Bean的创建的生命周期，这过程包括了合并BeanDefinition、推断构造方法、实例化、属性填充、初始化前、初始化、初始化后等步骤，其中AOP就是改重在初始化后这一步骤中
+
+* a. 扫描xml文件，得到所有的BeanDefinition对象，并保存在一个Map中
+  
+* b. 筛选出非懒加载的单例BeanDefinition进行创建，对于多例不需要在启动过程中创建，会在每次获取Bean时利用BeanDefinition创建
+* c. 利用BeanDefinition创建Bean就是Bean的创建的生命周期，这过程包括了合并BeanDefinition、推断构造方法、实例化、属性填充、初始化前、初始化、初始化后等步骤，其中AOP就是改重在初始化后这一步骤中
+
 （2）单例Bean创建完成之后，Spring会发布一个容器启动事件
 （3）Spring启动结束
 
-### 10，Spring源码阅读
+### 10 Spring源码阅读
 
 #### Spring的核心类介绍
+
 * DefaultListableBeanFactory
 
 ![img_4.png](assets/img_4_BeanFactory.png)
@@ -950,7 +978,7 @@ InputSource，EntityResolver都在jdk中
     }
 ```
 
-### 11，Spring事务怎么实现回滚
+### 11 Spring事务怎么实现回滚
 
 （1）Spring的事务管理是如何实现的
 总述：Spring事务是由AOP实现的，首先要生成具体的代理对象，然后按照AOP的整套流程来执行具体的操作逻辑，正常情况下要通过通知来完成核心功能，但是事务不是通过通知来实现的，而是通过TransactionInterceptor来实现的，通过调用invoke方法来实现具体的逻辑
@@ -1634,12 +1662,12 @@ protected void doBegin(Object transaction, TransactionDefinition definition) {
 
     try{
         if(!txObject.hasConnectionHolder()||
-        txObject.getConnectionHolder().isSynchronizedWithTransaction()){
-        Connection newCon=this.dataSource.getConnection();
-        if(logger.isDebugEnabled()){
-        logger.debug("Acquired Connection ["+newCon+"] for JDBC transaction");
-        }
-        txObject.setConnectionHolder(new ConnectionHolder(newCon),true);
+          txObject.getConnectionHolder().isSynchronizedWithTransaction()){
+          Connection newCon=this.dataSource.getConnection();
+          if(logger.isDebugEnabled()){
+            logger.debug("Acquired Connection ["+newCon+"] for JDBC transaction");
+          }
+          txObject.setConnectionHolder(new ConnectionHolder(newCon),true);
         }
 
         txObject.getConnectionHolder().setSynchronizedWithTransaction(true);
@@ -1652,19 +1680,19 @@ protected void doBegin(Object transaction, TransactionDefinition definition) {
         // so we don't want to do it unnecessarily (for example if we've explicitly
         // configured the connection pool to set it already).
         if(con.getAutoCommit()){
-        txObject.setMustRestoreAutoCommit(true);
-        if(logger.isDebugEnabled()){
-        logger.debug("Switching JDBC Connection ["+con+"] to manual commit");
-        }
-        // 设置自动提交为关闭
-        con.setAutoCommit(false);
+          txObject.setMustRestoreAutoCommit(true);
+          if(logger.isDebugEnabled()){
+            logger.debug("Switching JDBC Connection ["+con+"] to manual commit");
+          }
+          // 设置自动提交为关闭
+          con.setAutoCommit(false);
         }
 
         ...
     }
 ```
 
-### 12，Spring的事务传播和隔离级别有哪些？
+### 12 Spring的事务传播和隔离级别有哪些？
 
 查看Spring的Propagation枚举类：
 
@@ -1746,7 +1774,7 @@ int TRANSACTION_REPEATABLE_READ  = 4;
 int TRANSACTION_SERIALIZABLE     = 8;
 ```
 
-### 95，spring源码编译，版本号：4.3.18
+### 13 spring源码编译，版本号：4.3.18
 
 * 命令：./gradlew :spring-oxm:compileTestJava  编译成功
 
@@ -1756,7 +1784,7 @@ int TRANSACTION_SERIALIZABLE     = 8;
 
 ![gradle按钮](assets/gradle按钮-编译成功.png)
 
-### 96，调试循环依赖
+### 14 调试循环依赖
 
 （1）配置文件和依赖bean的准备
 
@@ -1779,28 +1807,61 @@ Class B的内容类似A，这里省略。
 这是在什么时候保存的？答案是在beanDefinition解析阶段，有一个处理步骤是解析property子元素：parsePropertyElements(ele, bd)，在此方法中，比如解析xml中的a的属性b，会把property标签中的ref="b"保存为RuntimeBeanReference，源码如下：
 
 ```java
-public void parsePropertyElement(Element ele, BeanDefinition bd) {
-        String propertyName = ele.getAttribute(NAME_ATTRIBUTE);
-        if (!StringUtils.hasLength(propertyName)) {
-            error("Tag 'property' must have a 'name' attribute", ele);
-            return;
-        }
-        this.parseState.push(new PropertyEntry(propertyName));
-        try {
-            if (bd.getPropertyValues().contains(propertyName)) {
-                error("Multiple 'property' definitions for property '" + propertyName + "'", ele);
-                return;
-            }
-            Object val = parsePropertyValue(ele, bd, propertyName);
-            PropertyValue pv = new PropertyValue(propertyName, val);
-            parseMetaElements(ele, pv);
-            pv.setSource(extractSource(ele));
-            bd.getPropertyValues().addPropertyValue(pv);
-        }
-        finally {
-            this.parseState.pop();
+// org.springframework.beans.factory.xml.BeanDefinitionParserDelegate
+public void parsePropertyElements(Element beanEle, BeanDefinition bd) {
+    NodeList nl = beanEle.getChildNodes();
+    for (int i = 0; i < nl.getLength(); i++) {
+        Node node = nl.item(i);
+        if (isCandidateElement(node) && nodeNameEquals(node, PROPERTY_ELEMENT)) {
+          parsePropertyElement((Element) node, bd);
         }
     }
+}
+
+public void parsePropertyElement(Element ele, BeanDefinition bd) {
+    String propertyName = ele.getAttribute(NAME_ATTRIBUTE);
+    if (!StringUtils.hasLength(propertyName)) {
+        error("Tag 'property' must have a 'name' attribute", ele);
+        return;
+    }
+    this.parseState.push(new PropertyEntry(propertyName));
+    try {
+        if (bd.getPropertyValues().contains(propertyName)) {
+            error("Multiple 'property' definitions for property '" + propertyName + "'", ele);
+            return;
+        }
+        Object val = parsePropertyValue(ele, bd, propertyName);
+        PropertyValue pv = new PropertyValue(propertyName, val);
+        parseMetaElements(ele, pv);
+        pv.setSource(extractSource(ele));
+        bd.getPropertyValues().addPropertyValue(pv);
+    } finally {
+        this.parseState.pop();
+    }
+}
+
+public void parsePropertyElement(Element ele, BeanDefinition bd) {
+    String propertyName = ele.getAttribute(NAME_ATTRIBUTE);
+    if (!StringUtils.hasLength(propertyName)) {
+        error("Tag 'property' must have a 'name' attribute", ele);
+        return;
+    }
+    this.parseState.push(new PropertyEntry(propertyName));
+    try {
+        if (bd.getPropertyValues().contains(propertyName)) {
+            error("Multiple 'property' definitions for property '" + propertyName + "'", ele);
+            return;
+        }
+        Object val = parsePropertyValue(ele, bd, propertyName);
+        PropertyValue pv = new PropertyValue(propertyName, val);
+        parseMetaElements(ele, pv);
+        pv.setSource(extractSource(ele));
+        bd.getPropertyValues().addPropertyValue(pv);
+    }
+    finally {
+        this.parseState.pop();
+    }
+}
 
 
 public Object parsePropertyValue(Element ele, BeanDefinition bd, String propertyName) {
@@ -1972,6 +2033,7 @@ protected void applyPropertyValues(String beanName, BeanDefinition mbd, BeanWrap
 进入valueResolver的resolveValueIfNecessary方法，来到第一个分支，进入resolveReference方法，发现依赖bean（此处是b）是在这里创建的，熟悉的beanFactory.getBean()方法。
 
 ```java
+// org.springframework.beans.factory.support.BeanDefinitionValueResolver
 public Object resolveValueIfNecessary(Object argName, Object value) {
         // We must check each value to see whether it requires a runtime reference
         // to another bean to be resolved.
@@ -2044,7 +2106,7 @@ private Object resolveReference(Object argName, RuntimeBeanReference ref) {
 
 ![查看一级缓存中的单例](assets/查看一级缓存中的单例.png)
 
-### 13，SpringMVC的九大组件
+### 15 SpringMVC的九大组件
 
 * 上传解析器
 * 国际化解析器
@@ -2056,8 +2118,561 @@ private Object resolveReference(Object argName, RuntimeBeanReference ref) {
 * 视图解析器
 * FlashMap解析器：flashMap主要用在redirect中传递参数
 
-### 14，springboot自动装配
+### 16 springboot自动装配
 
 ![springboot注解](assets/img_17_springboot注解.png)
 
 ![spring.factories](assets/img_16_spring.factories.png)
+
+### 17 bean的销毁
+
+* 配置属性destroy-method方法
+* 注册后处理器DestructionAwareBeanPostProcessor
+* 源码
+
+  ```java
+    // org.springframework.beans.factory.support.AbstractBeanFactory
+    protected void registerDisposableBeanIfNecessary(String beanName, Object bean, RootBeanDefinition mbd) {
+        AccessControlContext acc = (System.getSecurityManager() != null ? getAccessControlContext() : null);
+        // 什么样的bean会销毁？不是Prototype类型且requiresDestruction方法返回true
+        if (!mbd.isPrototype() && requiresDestruction(bean, mbd)) {
+            if (mbd.isSingleton()) {
+            // Register a DisposableBean implementation that performs all destruction
+            // work for the given bean: DestructionAwareBeanPostProcessors,
+            // DisposableBean interface, custom destroy method.
+            registerDisposableBean(beanName,
+                new DisposableBeanAdapter(bean, beanName, mbd, getBeanPostProcessors(), acc));
+            }
+            else {
+                // A bean with a custom scope...
+                Scope scope = this.scopes.get(mbd.getScope());
+                if (scope == null) {
+                throw new IllegalStateException("No Scope registered for scope name '" + mbd.  getScope() + "'");
+                }
+                scope.registerDestructionCallback(beanName,
+                    new DisposableBeanAdapter(bean, beanName, mbd, getBeanPostProcessors(), acc));
+            }
+        }
+    }
+
+    // org.springframework.beans.factory.support.AbstractBeanFactory
+    protected boolean requiresDestruction(Object bean, RootBeanDefinition mbd) {
+        return (bean != null && 
+            (DisposableBeanAdapter.hasDestroyMethod(bean, mbd) ||               (hasDestructionAwareBeanPostProcessors() &&
+                    DisposableBeanAdapter.hasApplicableProcessors(bean, getBeanPostProcessors())
+            )
+            ));
+    }
+
+    // org.springframework.beans.factory.support.DisposableBeanAdapter
+    public static boolean hasDestroyMethod(Object bean, RootBeanDefinition beanDefinition) {
+        if (bean instanceof DisposableBean || closeableInterface.isInstance(bean)) {
+            return true;
+        }
+        String destroyMethodName = beanDefinition.getDestroyMethodName();
+        if (AbstractBeanDefinition.INFER_METHOD.equals(destroyMethodName)) {
+            return (ClassUtils.hasMethod(bean.getClass(), CLOSE_METHOD_NAME) ||
+                ClassUtils.hasMethod(bean.getClass(), SHUTDOWN_METHOD_NAME));
+        }
+        return StringUtils.hasLength(destroyMethodName);
+    }
+
+    // org.springframework.beans.factory.support.DisposableBeanAdapter
+    public static boolean hasApplicableProcessors(Object bean, List<BeanPostProcessor>      postProcessors) {
+        if (!CollectionUtils.isEmpty(postProcessors)) {
+            for (BeanPostProcessor processor : postProcessors) {
+                if (processor instanceof DestructionAwareBeanPostProcessor) {
+                    DestructionAwareBeanPostProcessor dabpp = 
+                        (DestructionAwareBeanPostProcessor)processor;
+                    try {
+                        if (dabpp.requiresDestruction(bean)) {
+                            return true;
+                        }
+                    }
+                    catch (AbstractMethodError err) {
+                        // A pre-4.3 third-party DestructionAwareBeanPostProcessor...
+                        // As of 5.0, we can let requiresDestruction be a Java 8 default method which returns true.
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    // org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor
+    public interface DestructionAwareBeanPostProcessor extends BeanPostProcessor {
+
+        void postProcessBeforeDestruction(Object bean, String beanName) throws BeansException;
+
+
+        boolean requiresDestruction(Object bean);
+
+    }
+
+    // org.springframework.beans.factory.support.DefaultSingletonBeanRegistry
+    public void registerDisposableBean(String beanName, DisposableBean bean) {
+      synchronized (this.disposableBeans) {
+          this.disposableBeans.put(beanName, bean);
+      }
+    }
+
+    // disposableBeans的处理
+    public void destroySingletons() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Destroying singletons in " + this);
+        }
+        synchronized (this.singletonObjects) {
+            this.singletonsCurrentlyInDestruction = true;
+        }
+
+        String[] disposableBeanNames;
+        synchronized (this.disposableBeans) {
+            disposableBeanNames = StringUtils.toStringArray(this.disposableBeans.keySet());
+        }
+        for (int i = disposableBeanNames.length - 1; i >= 0; i--) {
+            destroySingleton(disposableBeanNames[i]);
+        }
+
+        this.containedBeanMap.clear();
+        this.dependentBeanMap.clear();
+        this.dependenciesForBeanMap.clear();
+
+        clearSingletonCache();
+    }
+
+    public void destroySingleton(String beanName) {
+        // Remove a registered singleton of the given name, if any.
+        removeSingleton(beanName);
+
+        // Destroy the corresponding DisposableBean instance.
+        DisposableBean disposableBean;
+        synchronized (this.disposableBeans) {
+            disposableBean = (DisposableBean) this.disposableBeans.remove(beanName);
+        }
+        destroyBean(beanName, disposableBean);
+    }
+
+
+    protected void destroyBean(String beanName, DisposableBean bean) {
+        // Trigger destruction of dependent beans first...
+        Set<String> dependencies;
+        synchronized (this.dependentBeanMap) {
+            // Within full synchronization in order to guarantee a disconnected Set
+            dependencies = this.dependentBeanMap.remove(beanName);
+        }
+        if (dependencies != null) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Retrieved dependent beans for bean '" + beanName + "': " + dependencies);
+            }
+            for (String dependentBeanName : dependencies) {
+                destroySingleton(dependentBeanName);
+            }
+        }
+
+        // Actually destroy the bean now...
+        if (bean != null) {
+            try {
+                bean.destroy();
+            }
+            catch (Throwable ex) {
+                logger.error("Destroy method on bean with name '" + beanName + "' threw an exception", ex);
+            }
+        }
+
+        // Trigger destruction of contained beans...
+        Set<String> containedBeans;
+        synchronized (this.containedBeanMap) {
+            // Within full synchronization in order to guarantee a disconnected Set
+            containedBeans = this.containedBeanMap.remove(beanName);
+        }
+        if (containedBeans != null) {
+            for (String containedBeanName : containedBeans) {
+                destroySingleton(containedBeanName);
+            }
+        }
+
+        // Remove destroyed bean from other beans' dependencies.
+        synchronized (this.dependentBeanMap) {
+            for (Iterator<Map.Entry<String, Set<String>>> it = this.dependentBeanMap.entrySet().iterator(); it.hasNext();) {
+                Map.Entry<String, Set<String>> entry = it.next();
+                Set<String> dependenciesToClean = entry.getValue();
+                dependenciesToClean.remove(beanName);
+                if (dependenciesToClean.isEmpty()) {
+                    it.remove();
+                }
+            }
+        }
+
+        // Remove destroyed bean's prepared dependency information.
+        this.dependenciesForBeanMap.remove(beanName);
+    }
+
+    // destory方法
+    public interface DisposableBean {
+
+        void destroy() throws Exception;
+
+    }
+  ```
+
+* 不同的配置方法
+  <https://blog.csdn.net/qq_38826019/article/details/117387398>
+
+### 18 BeanPostProcessor继承关系
+
+* 类图
+  ![BeanPostProcessor类图](assets/BeanPostProcessor-classDiagram.png)
+
+* Hierarchy
+  ![BeanPostProcessor-1](assets/BeanPostProcessor-1.png)
+  ![BeanPostProcessor-2](assets/BeanPostProcessor-2.png)
+
+* BeanPostProcessor接口的方法
+
+    ```java
+    public interface BeanPostProcessor {
+
+        Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException;
+
+        Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException;
+
+    }
+    ```
+
+* InstantiationAwareBeanPostProcessor接口
+
+    ```java
+    public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
+
+        Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) throws BeansException;
+
+        boolean postProcessAfterInstantiation(Object bean, String beanName) throws BeansException;
+
+        PropertyValues postProcessPropertyValues(
+            PropertyValues pvs, PropertyDescriptor[] pds, Object bean, String beanName) throws BeansException;
+
+    }
+    ```
+
+* SmartInstantiationAwareBeanPostProcessor接口
+  
+    ```java
+    public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationAwareBeanPostProcessor {
+
+        Class<?> predictBeanType(Class<?> beanClass, String beanName) throws BeansException;
+
+        Constructor<?>[] determineCandidateConstructors(Class<?> beanClass, String beanName) throws BeansException;
+
+        Object getEarlyBeanReference(Object bean, String beanName) throws BeansException;
+
+    }
+    ```
+
+* MergedBeanDefinitionPostProcessor接口
+
+    ```java
+    public interface MergedBeanDefinitionPostProcessor extends BeanPostProcessor {
+
+        void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName);
+
+    }
+    ```
+
+* 同时实现了MergedBeanDefinitionPostProcessor接口和InstantiationAwareBeanPostProcessor接口
+  * CommonAnnotationBeanPostProcessor
+  
+    ```java
+    public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBeanPostProcessor
+        implements InstantiationAwareBeanPostProcessor, BeanFactoryAware, Serializable {...}
+
+    public class InitDestroyAnnotationBeanPostProcessor
+        implements DestructionAwareBeanPostProcessor, MergedBeanDefinitionPostProcessor, PriorityOrdered, Serializable {...}
+    ```
+
+  * AutowiredAnnotationBeanPostProcessor
+
+    ```java
+    public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBeanPostProcessorAdapter
+        implements MergedBeanDefinitionPostProcessor, PriorityOrdered, BeanFactoryAware {...}
+
+    public abstract class InstantiationAwareBeanPostProcessorAdapter implements SmartInstantiationAwareBeanPostProcessor {...}
+    ```
+
+* InstantiationAwareBeanPostProcessorAdapter
+
+    ```java
+    public abstract class InstantiationAwareBeanPostProcessorAdapter implements SmartInstantiationAwareBeanPostProcessor {
+
+        // ======== SmartInstantiationAwareBeanPostProcessor的3个方法 start ========
+        @Override
+        public Class<?> predictBeanType(Class<?> beanClass, String beanName) {
+            return null;
+        }
+
+        @Override
+        public Constructor<?>[] determineCandidateConstructors(Class<?> beanClass, String beanName) throws BeansException {
+            return null;
+        }
+
+        @Override
+        public Object getEarlyBeanReference(Object bean, String beanName) throws BeansException {
+            return bean;
+        }
+        // ======== SmartInstantiationAwareBeanPostProcessor的3个方法 end ========
+
+
+        // ======== InstantiationAwareBeanPostProcessor的3个方法 start ========
+        @Override
+        public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) throws BeansException {
+            return null;
+        }
+
+        // 注意 After方法的返回值是boolean
+        @Override
+        public boolean postProcessAfterInstantiation(Object bean, String beanName) throws BeansException {
+            return true;
+        }
+
+        @Override
+        public PropertyValues postProcessPropertyValues(
+            PropertyValues pvs, PropertyDescriptor[] pds, Object bean, String beanName) throws BeansException {
+
+            return pvs;
+        }
+        // ======== InstantiationAwareBeanPostProcessor的3个方法 end ========
+
+
+        // ======== BeanPostProcessor的2个方法 start ========
+        @Override
+        public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+            return bean;
+        }
+
+        @Override
+        public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+            return bean;
+        }
+        // ======== BeanPostProcessor的2个方法 end ========
+    }
+    ```
+
+### 19 AOP之AbstractAutoProxyCreator
+
+* bean创建过程中的2次AOP机会
+
+    ```java
+    // org.springframework.aop.framework.autoproxy.AbstractAutoProxyCreator
+    /**
+    第一次机会，为什么没有成功？
+    */
+    @Override
+    public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) throws BeansException {
+        Object cacheKey = getCacheKey(beanClass, beanName);
+
+        if (beanName == null || !this.targetSourcedBeans.contains(beanName)) {
+            if (this.advisedBeans.containsKey(cacheKey)) {
+                return null;
+            }
+            if (isInfrastructureClass(beanClass) || shouldSkip(beanClass, beanName)) {
+                this.advisedBeans.put(cacheKey, Boolean.FALSE);
+                return null;
+            }
+        }
+
+        // Create proxy here if we have a custom TargetSource.
+        // Suppresses unnecessary default instantiation of the target bean:
+        // The TargetSource will handle target instances in a custom fashion.
+        if (beanName != null) {
+            TargetSource targetSource = getCustomTargetSource(beanClass, beanName);
+            if (targetSource != null) {
+                this.targetSourcedBeans.add(beanName);
+                Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(beanClass, beanName, targetSource);
+                Object proxy = createProxy(beanClass, beanName, specificInterceptors, targetSource);
+                this.proxyTypes.put(cacheKey, proxy.getClass());
+                return proxy;
+            }
+        }
+
+        return null;
+    }
+
+    @Override
+    public boolean postProcessAfterInstantiation(Object bean, String beanName) {
+        return true;
+    }
+
+    @Override
+    public PropertyValues postProcessPropertyValues(
+            PropertyValues pvs, PropertyDescriptor[] pds, Object bean, String beanName) {
+
+        return pvs;
+    }
+
+    @Override
+    public Object postProcessBeforeInitialization(Object bean, String beanName) {
+        return bean;
+    }
+
+    /**
+        * Create a proxy with the configured interceptors if the bean is
+        * identified as one to proxy by the subclass.
+        * @see #getAdvicesAndAdvisorsForBean
+
+        第二次机会
+        */
+    @Override
+    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        if (bean != null) {
+            Object cacheKey = getCacheKey(bean.getClass(), beanName);
+            if (!this.earlyProxyReferences.contains(cacheKey)) {
+                return wrapIfNecessary(bean, beanName, cacheKey);
+            }
+        }
+        return bean;
+    }
+
+    protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) {
+        if (beanName != null && this.targetSourcedBeans.contains(beanName)) {
+            return bean;
+        }
+        if (Boolean.FALSE.equals(this.advisedBeans.get(cacheKey))) {
+            return bean;
+        }
+        if (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) {
+            this.advisedBeans.put(cacheKey, Boolean.FALSE);
+            return bean;
+        }
+
+        // Create proxy if we have advice.
+        Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
+        if (specificInterceptors != DO_NOT_PROXY) {
+            this.advisedBeans.put(cacheKey, Boolean.TRUE);
+            Object proxy = createProxy(
+                    bean.getClass(), beanName, specificInterceptors, new SingletonTargetSource(bean));
+            this.proxyTypes.put(cacheKey, proxy.getClass());
+            return proxy;
+        }
+
+        this.advisedBeans.put(cacheKey, Boolean.FALSE);
+        return bean;
+    }
+    ```
+
+* 源码分析
+  * AnnotationAwareAspectJAutoProxyCreator在resolveBeforeInstantiation没有生成代理对象
+    ![resolveBeforeInstantiation-01](assets/resolveBeforeInstantiation-01.png)
+    ![resolveBeforeInstantiation-02](assets/resolveBeforeInstantiation-02.png)
+    ![resolveBeforeInstantiation-03](assets/resolveBeforeInstantiation-03.png)
+    ![resolveBeforeInstantiation-04](assets/resolveBeforeInstantiation-04.png)
+    ![resolveBeforeInstantiation-05](assets/resolveBeforeInstantiation-05.png)
+    ![resolveBeforeInstantiation-06](assets/resolveBeforeInstantiation-06.png)
+    ![resolveBeforeInstantiation-07](assets/resolveBeforeInstantiation-07.png)
+    ![resolveBeforeInstantiation-08](assets/resolveBeforeInstantiation-08.png)
+    ![resolveBeforeInstantiation-09](assets/resolveBeforeInstantiation-09.png)
+    ![resolveBeforeInstantiation-10](assets/resolveBeforeInstantiation-10.png)
+    ![resolveBeforeInstantiation-11](assets/resolveBeforeInstantiation-11.png)
+    ![resolveBeforeInstantiation-12](assets/resolveBeforeInstantiation-12.png)
+
+  * AnnotationAwareAspectJAutoProxyCreator在doCreateBean生成了代理对象
+    ![doCreateBean](assets/doCreateBean.png)
+    ![proxyObject](assets/proxyObject.png)
+    ![wrapIfNecessary](assets/wrapIfNecessary.png)
+
+  * 对比2个生成代理的if判断
+  
+    * resolveBeforeInstantiation时customTargetSourceCreators为null
+
+      ```java
+      if (beanName != null) {
+          // TargetSource用于getAdvicesAndAdvisorsForBean方法和createProxy方法
+          TargetSource targetSource = getCustomTargetSource(beanClass, beanName);
+          if (targetSource != null) {
+              this.targetSourcedBeans.add(beanName);
+              // getAdvicesAndAdvisorsForBean方法的第3个参数是TargetSource
+              Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(beanClass, beanName, targetSource);
+              // targetSource作为createProxy方法的第4个参数
+              Object proxy = createProxy(beanClass, beanName, specificInterceptors, targetSource);
+              this.proxyTypes.put(cacheKey, proxy.getClass());
+              return proxy;
+          }
+      }
+      ```
+
+    * doCreateBean时customTargetSourceCreators也为null，但此时不判断targetSource是否为空
+
+      ```java
+      // Create proxy if we have advice.
+      // getAdvicesAndAdvisorsForBean方法的第3个参数是TargetSource，此时传入的是null
+      Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
+      if (specificInterceptors != DO_NOT_PROXY) {
+          this.advisedBeans.put(cacheKey, Boolean.TRUE);
+          // createProxy方法的第4个参数是TargetSource，此处用SingletonTargetSource将bean包装成targetSource
+          Object proxy = createProxy(
+                  bean.getClass(), beanName, specificInterceptors, new SingletonTargetSource(bean));
+          this.proxyTypes.put(cacheKey, proxy.getClass());
+          return proxy;
+      }
+      ```
+
+* 总结：AOP默认通过doCreateBean -> postProcessAfterInitializingBean -> wrapIfNecessary生成代理
+  因为createProxy方法最后一个参数TargetSource不能为空
+  
+    ```java
+        protected Object createProxy(
+            Class<?> beanClass, String beanName, Object[] specificInterceptors, TargetSource targetSource) {...}
+    ```
+
+  * resolveBeforeInstantiation时targetSource为空，所以跳过
+  * doCreateBean
+        -> postProcessAfterInitializingBean
+            -> wrapIfNecessary
+            用SingletonTargetSource把bean封闭成一个targetSource传入createProxy，所以生成了代理
+
+### 20 Lifecycle接口
+
+* Spring启动时调用其start方法，Spring关闭时调用其stop方法
+* SpringBoot就是通过实现SmartLifecycle来启动内嵌的web容器
+  
+  ```java
+    // org.springframework.boot.web.servlet.context.WebServerStartStopLifecycle
+    class WebServerStartStopLifecycle implements SmartLifecycle {
+
+        private final ServletWebServerApplicationContext applicationContext;
+
+        private final WebServer webServer;
+
+        private volatile boolean running;
+
+        WebServerStartStopLifecycle(ServletWebServerApplicationContext applicationContext, WebServer webServer) {
+            this.applicationContext = applicationContext;
+            this.webServer = webServer;
+        }
+
+        @Override
+        public void start() {
+            this.webServer.start();
+            this.running = true;
+            this.applicationContext
+                    .publishEvent(new ServletWebServerInitializedEvent(this.webServer, this.applicationContext));
+        }
+
+        @Override
+        public void stop() {
+            this.webServer.stop();
+        }
+
+        @Override
+        public boolean isRunning() {
+            return this.running;
+        }
+
+        @Override
+        public int getPhase() {
+            return Integer.MAX_VALUE - 1;
+        }
+
+    }
+  ```
+
+  ![springboot中web服务器](assets/SpringBootSmartLifecycle.png)

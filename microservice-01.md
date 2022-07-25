@@ -2,7 +2,7 @@
 
 ## 序号（0~30）
 
-### 1，项目中使用dubbo的版本
+### 1 项目中使用dubbo的版本
 
 大致了解一下dubbo的版本更新事件：
 2012年10月23号   2.5.3
@@ -33,11 +33,165 @@ apache的dubbo版本从2.7.0开始
 <dubbo:protocol name="dubbo" port="${dubbo.protocol.port}" />
 ```
 
-### 2，dubbo服务暴露和服务消费机制
+### 2 dubbo服务暴露和服务消费机制
+
+* 流程图
 
 ![dubbo服务暴露和消费](assets/2022-04-19-00-12-06-image.png)
 
-### 3，dubbo协议的魔数
+* 服务暴露
+  ```java
+  入口 export()
+  -> ServiceBean.export()
+  -> ServiceConfig.export()
+  -> doExport()
+  -> doExportUrls()
+  -> loadRegistries(true)
+  -> doExportFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs)
+  -> exportLocal(URL url)
+  -> proxyFactory.getInvoker(ref, (Class) interfaceClass, local)
+  -> ExtensionLoader.getExtensionLoader(ProxyFactory.class).getExtension("javassist")
+  -> extension.getInvoker(arg0, arg1, arg2)
+  -> StubProxyFactoryWrapper.getInvoker(T proxy, Class<T> type, URL url)
+  ...
+  ```
+
+* 服务消费
+  ```java
+  入口 getObject()
+  -> ReferenceBean.getObject()
+  -> ReferenceConfig.get()
+  -> ReferenceConfig.init()
+  -> ReferenceConfig.createProxy()
+  ```
+* 直连服务的消费原理
+  * 源码
+  ```java
+  // com.alibaba.dubbo.config.ReferenceConfig
+  private T createProxy(Map<String, String> map) {
+    URL tmpUrl = new URL("temp", "localhost", 0, map);
+    boolean isJvmRefer;
+    if (this.isInjvm() == null) {
+        if (this.url != null && this.url.length() > 0) {
+            isJvmRefer = false;
+        } else if (InjvmProtocol.getInjvmProtocol().isInjvmRefer(tmpUrl)) {
+            isJvmRefer = true;
+        } else {
+            isJvmRefer = false;
+        }
+    } else {
+        isJvmRefer = this.isInjvm();
+    }
+
+    if (isJvmRefer) {
+        URL url = (new URL("injvm", "127.0.0.1", 0, this.interfaceClass.getName())).addParameters(map);
+        this.invoker = refprotocol.refer(this.interfaceClass, url);
+        if (logger.isInfoEnabled()) {
+            logger.info("Using injvm service " + this.interfaceClass.getName());
+        }
+    } else {
+        URL u;
+        URL url;
+        // 如果url不为空，说明是直连的方式
+        if (this.url != null && this.url.length() > 0) {
+            // 支持使用分号隔开指定的多个直连机器
+            String[] us = Constants.SEMICOLON_SPLIT_PATTERN.split(this.url);
+            if (us != null && us.length > 0) {
+                String[] arr$ = us;
+                int len$ = us.length;
+
+                for(int i$ = 0; i$ < len$; ++i$) {
+                    String u = arr$[i$];
+                    URL url = URL.valueOf(u);
+                    if (url.getPath() == null || url.getPath().length() == 0) {
+                        url = url.setPath(this.interfaceName);
+                    }
+                    // 允许直连地址写成注册中心
+                    if ("registry".equals(url.getProtocol())) {
+                        this.urls.add(url.addParameterAndEncoded("refer", StringUtils.toQueryString(map)));
+                    } else {
+                        // 直连某一台服务提供者
+                        this.urls.add(ClusterUtils.mergeUrl(url, map));
+                    }
+                }
+            }
+        } else {
+            List<URL> us = this.loadRegistries(false);
+            if (us != null && !us.isEmpty()) {
+                for(Iterator i$ = us.iterator(); i$.hasNext(); this.urls.add(u.addParameterAndEncoded("refer", StringUtils.toQueryString(map)))) {
+                    u = (URL)i$.next();
+                    url = this.loadMonitor(u);
+                    if (url != null) {
+                        map.put("monitor", URL.encode(url.toFullString()));
+                    }
+                }
+            }
+
+            if (this.urls.isEmpty()) {
+                throw new IllegalStateException("No such any registry to reference " + this.interfaceName + " on the consumer " + NetUtils.getLocalHost() + " use dubbo version " + Version.getVersion() + ", please config <dubbo:registry address=\"...\" /> to your spring config.");
+            }
+        }
+
+        if (this.urls.size() == 1) {
+            this.invoker = refprotocol.refer(this.interfaceClass, (URL)this.urls.get(0));
+        } else {
+            List<Invoker<?>> invokers = new ArrayList();
+            URL registryURL = null;
+            Iterator i$ = this.urls.iterator();
+
+            while(i$.hasNext()) {
+                url = (URL)i$.next();
+                invokers.add(refprotocol.refer(this.interfaceClass, url));
+                if ("registry".equals(url.getProtocol())) {
+                    registryURL = url;
+                }
+            }
+
+            if (registryURL != null) {
+                u = registryURL.addParameter("cluster", "available");
+                this.invoker = cluster.join(new StaticDirectory(u, invokers));
+            } else {
+                this.invoker = cluster.join(new StaticDirectory(invokers));
+            }
+        }
+    }
+
+    Boolean c = this.check;
+    if (c == null && this.consumer != null) {
+        c = this.consumer.isCheck();
+    }
+
+    if (c == null) {
+        c = true;
+    }
+
+    if (c && !this.invoker.isAvailable()) {
+        this.initialized = false;
+        throw new IllegalStateException("Failed to check the status of the service " + this.interfaceName + ". No provider available for the service " + (this.group == null ? "" : this.group + "/") + this.interfaceName + (this.version == null ? "" : ":" + this.version) + " from the url " + this.invoker.getUrl() + " to the consumer " + NetUtils.getLocalHost() + " use dubbo version " + Version.getVersion());
+    } else {
+        if (logger.isInfoEnabled()) {
+            logger.info("Refer dubbo service " + this.interfaceClass.getName() + " from url " + this.invoker.getUrl());
+        }
+
+        return proxyFactory.getProxy(this.invoker);
+    }
+  }
+  ```
+
+  * 直连的xml配置
+  ```xml
+  <!-- 直连 registry属性的值是 N/A -->
+  <dubbo:reference id="userService" interface="com.md.dubbo.service.UserService"
+                     url="dubbo://localhost:20880" registry="N/A"/>
+  
+  <!-- 注册中心 -->
+  <dubbo:registry id="loan" address="${dubbo.registry.address}" group="${dubbo.registry.group}" protocol="zookeeper"/>
+  <!-- 连接注册中心 registry属性的值是 一个注册中心的id -->
+  <dubbo:reference registry="loan" version="1.0.0" id="generateSequenceService" retries="0" check="false"
+        interface="com.xxx.service.api.GenerateSequenceService" />
+  ```
+
+### 3 dubbo协议的魔数
 
 ```java
 public class ExchangeCodec extends TelnetCodec {
@@ -52,29 +206,88 @@ public class ExchangeCodec extends TelnetCodec {
 }
 ```
 
-### 4，dubbo protocol继承图
+### 4 dubbo protocol继承图
 
 ![dubbo protocol](assets/2022-04-19-00-54-16-image.png)
 
-### 5，dubbo服务暴露代码分析
+### 5 dubbo服务暴露的入口
+
+* export()方法
 
 ```java
-export()
--> ServiceBean.export()
--> ServiceConfig.export()
--> doExport()
--> doExportUrls()
--> loadRegistries(true)
--> doExportFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs)
--> exportLocal(URL url)
--> proxyFactory.getInvoker(ref, (Class) interfaceClass, local)
--> ExtensionLoader.getExtensionLoader(ProxyFactory.class).getExtension("javassist")
--> extension.getInvoker(arg0, arg1, arg2)
--> StubProxyFactoryWrapper.getInvoker(T proxy, Class<T> type, URL url)
-...
+// com.alibaba.dubbo.config.spring.ServiceBean
+// spring容器初始化完成之后调用
+public void onApplicationEvent(ContextRefreshedEvent event) {
+    // 没有配置delay时为true
+    if (isDelay() && !isExported() && !isUnexported()) {
+        if (logger.isInfoEnabled()) {
+            logger.info("The service ready on spring started. service: " + getInterface());
+        }
+        export();
+    }
+
+}
+
+/**
+如果没有配置delay，此方法返回true
+如果配置了delay，此方法返回false
+
+此函数名与实际逻辑相冲突：不配置delay（delay为null或-1），函数名却叫『是延迟』
+*/
+private boolean isDelay() {
+    Integer delay = getDelay();
+    ProviderConfig provider = getProvider();
+    if (delay == null && provider != null) {
+        delay = provider.getDelay();
+    }
+    return supportedApplicationListener && (delay == null || delay == -1);
+}
+
+// bean完成初始化之后调用
+public void afterPropertiesSet() throws Exception {
+    // 省略其他代码
+
+    // 如果配置了delay，方法isDelay返回false
+    if (!this.isDelay()) {
+        this.export();
+    }
+}
 ```
 
-### 6，dubbo的整体架构设计和分层
+![dubbo自2.6.5版本之后](assets/exportOfDubboService.png)
+
+* export() -> doExport()
+
+```java
+// com.alibaba.dubbo.config.ServiceConfig
+public synchronized void export() {
+    if (provider != null) {
+        if (export == null) {
+            export = provider.getExport();
+        }
+        if (delay == null) {
+            delay = provider.getDelay();
+        }
+    }
+    if (export != null && !export) {
+        return;
+    }
+    // 真正处理delay
+    if (delay != null && delay > 0) {
+        // 定时任务
+        delayExportExecutor.schedule(new Runnable() {
+            @Override
+            public void run() {
+                doExport();
+            }
+        }, delay, TimeUnit.MILLISECONDS);
+    } else {
+        doExport();
+    }
+}
+```
+
+### 6 dubbo的整体架构设计和分层
 
 #### （1）5个角色
 
@@ -124,7 +337,7 @@ export()
 
 * 数据序列化层（Serialize）：数据传输的序列化和反序列化
 
-### 7，ZAB协议与RAFT协议的区别
+### 7 ZAB协议与RAFT协议的区别
 
 #### （1）ZAB
 
@@ -138,7 +351,7 @@ export()
 * Follower 读写请求都转发到Leader，参与选举。
 * Candidate 每个节点上都有一个倒计时器 (Election Timeout)，时间随机在 150ms 到 300ms 之间。在一个节点倒计时结束 (Timeout) 后，这个节点的状态变成 Candidate 开始选举，它给其他几个节点发送选举请求 (RequestVote)。选举成功则变为Leader。
 
-### 8，zookeeper分布式锁
+### 8 zookeeper分布式锁
 
 * 节点特性
   * 节点类型
@@ -151,7 +364,8 @@ export()
 
 * 排他锁
   * 获取锁
-  在需要获取排他锁时，所有的客户端试图通过调用 create() 接口，在 /exclusive_lock 节点下创建临时子节点 /exclusive_lock/lock（临时节点只能作为叶子节点），最终只有一个客户端能创建成功，那么此客户端就获得了分布式锁。同时，所有没有获取到锁的客户端可以在 /exclusive_lock 节点上注册一个子节点变更的 watcher 监听事件，以便重新争取获得锁。
+    * 在需要获取排他锁时，所有的客户端试图通过调用 create() 接口，在 /exclusive_lock 节点下创建临时子节点 /exclusive_lock/lock（临时节点只能作为叶子节点），最终只有一个客户端能创建成功，那么此客户端就获得了分布式锁。
+    * 所有没有获取到锁的客户端可以在 /exclusive_lock 节点上注册一个子节点变更的 watcher 监听事件，以便重新争取获得锁。
   * 释放锁
     在定义锁时，我们已经提到，/exclusive_lock/lock是一个临时节点（只能作为叶子节点），因此以下两种情况下，都可能释放锁：
     * 当前获取锁的客户端机器发生宕机，那么Zookeeper上的这个临时节点就会被删除
@@ -168,15 +382,21 @@ export()
       向比自己序号小的最后一个节点注册Watcher监听
     * 等待Watcher通知，继续进入步骤2
   * 释放锁
-* 排他锁与共享锁的根本区别在于：排他锁是创建临时节点（只能作为叶子节点），共享锁是创建临时顺序节点
+* 排他锁与共享锁的比较
+  * 排他锁是创建临时节点（只能作为叶子节点），共享锁是创建临时顺序节点
+  * 羊群效应：排他锁有羊群效应，共享锁的羊群效应可经优化解决
 
-### 9，Dubbo SPI
+### 9 Dubbo SPI
 
-（1）与Java SPI相比，Dubbo SPI做了一定的改进和优化
-a. JDK标准的SPI会一次性实例化扩展点所有实现，如果有扩展实现则初始化很耗时，如果没有用上也加载，则浪费资源
-b. 如果扩展加载失败，则连扩展的名称都获取不到了，加载失败的真正原因被“吃掉”了，报的错并不是真正失败的原因
-c. 增加了对扩展IOC和AOP的支持，一个扩展可以直接setter注入其他扩展。在Java SPI使用中，java.util.ServiceLoader
-会一次把某接口下的所有实现庆全部初始化，用户直接调用即可。 Dubbo SPI只是加载配置文件中的类，并分成不同的种类缓存在内存中，而不会立即全部初始化，在性能上有更好的表现。
+* 兼容Java SPI
+
+* 与Java SPI相比，Dubbo SPI做了一定的改进和优化
+  * a. JDK标准的SPI会一次性实例化扩展点所有实现，如果有扩展实现则初始化很耗时，如果没有用上也加载，则浪费资源
+  * b. 如果扩展加载失败，则连扩展的名称都获取不到了，加载失败的真正原因被“吃掉”了，报的错并不是真正失败的原因
+  * c. 增加了对扩展IOC和AOP的支持，一个扩展可以直接setter注入其他扩展。
+  * d. 部分初始化
+    * 在Java SPI使用中，java.util.ServiceLoader会一次把某接口下的所有实现类全部初始化，用户直接调用即可。
+    * Dubbo SPI只是加载配置文件中的类，并分成不同的种类缓存在内存中，而不会立即全部初始化，在性能上有更好的表现。
 
 ```java
 // ExtensionLoader.java
@@ -194,11 +414,28 @@ if (wrapperClasses != null && !wrapperClasses.isEmpty()) {
 }
 ```
 
-（2）ExtensionLoader的工作原理
+* 扩展点的分类与缓存
+  * 缓存
+    * Class缓存
+    * 实例缓存
+  * 分类
+    * 普通扩展类  最基础的，配置在SPI配置文件中的扩展类实现
+    * 包装扩展类  这种Wrapper类没有具体的实现，只是做了通用逻辑的抽象，并且需要在构造方法中传入一个具体的扩展接口的实现
+    * 自适应扩展类  一个扩展接口会有很多实现类，具体使用哪个实现类可以不写死在配置或代码中，在运行时，通过传入URL中的某些参数动态来确定。使用@Adaptive注解
+    * 其他缓存
 
-ExtensionLoader的逻辑入口可以分为：
-a. getExtension  获取普通扩展类
-b. getAdaptiveExtension  获取自适应扩展类
+* 扩展点的特性
+  * 自动包装  装饰器模式
+  * 自动加载  如果某个扩展类是另外一个扩展点类的成员属性，并且拥有setter方法，那么框架也会自动注入对应的扩展点实例
+  * 自适应  使用@Adaptive注解
+  * 自动激活  使用@Activate注解，可以标记对应的扩展点默认被激活启用
+
+* ExtensionLoader的工作原理
+
+  逻辑入口可以分为：
+  * a. getExtension  获取普通扩展类
+  * b. getAdaptiveExtension  获取自适应扩展类
+  * c. getActivateExtension  根据不同的条件激活多个普通扩展类，对getExtension依赖比较重
 
 ```java
 @SuppressWarnings("unchecked")
@@ -253,11 +490,11 @@ private Class<?> createAdaptiveExtensionClass() {
 }
 ```
 
-c. getActivateExtension  获取自动激活的扩展类
+* 自适应扩展点动态编译的实现
 
-（3）扩展点动态编译的实现
-
-Dubbo中有三种代码编译器：JdkCompiler、JavassitCompiler和AdaptiveCompiler
+  * JdkCompiler
+  * JavassitCompiler
+  * AdaptiveCompiler
 
 ```java
 /**
@@ -329,7 +566,7 @@ public class AdaptiveCompiler implements Compiler {
 }
 ```
 
-### 10，服务的熔断与降级
+### 10 服务的熔断与降级
 
 <https://www.jianshu.com/p/98e8cfbf1b12>
 
@@ -343,7 +580,7 @@ public class AdaptiveCompiler implements Compiler {
 服务熔断（防止服务雪崩）:作用在服务提供者
 当链路的某个微服务不可用或者响应时间太长时，会进行服务的降级，进而熔断该节点微服务的调用，快速返回“错误”的响应信息。当检测到该节点微服务响应正常后恢复调用链
 
-### 11，RabbitMQ如何确保消息发送？消息接收？
+### 11 RabbitMQ如何确保消息发送？消息接收？
 
 （1）信道需要设置为confirm模式，则所有在信道上发布的消息都会分配一个唯一ID。
 一旦消息被投递到queue（可持久化的消息需要定稿磁盘），信道会发送一个确诊给生产者（包含消息唯一ID），如果RabbitMQ发生内部错误从而导致消息丢失，会发送一条nack（未确诊）消息给生产者。
@@ -353,7 +590,7 @@ public class AdaptiveCompiler implements Compiler {
 采用消息确认机制后，只要令noAck=false，消费者就有足够的时间处理消息(任务)，不用担心处理消息过程中消费者进程挂掉后消息丢失的问题，因为RabbitMQ会一直持有消息直到消费者显式调用basicAck为止。
 在Consumer中Confirm模式中分为手动确认和自动确认。
 
-### 12，Raft选举算法
+### 12 Raft选举算法
 
 （1）节点A发生故障，节点B和节点C没有收到领导者节点A的心跳信息，等待超时
 
@@ -369,7 +606,7 @@ public class AdaptiveCompiler implements Compiler {
 
 （7）节点A恢复后，收到节点C的高任期消息，自身将成为跟随者，接收节点C的消息
 
-### 13，Raft算法的几个关键机制
+### 13 Raft算法的几个关键机制
 
 （1）任期机制
 
@@ -381,7 +618,7 @@ public class AdaptiveCompiler implements Compiler {
 
 （5）大多数选票原则
 
-### 14，Netty
+### 14 Netty
 
 #### NioEventLoopGroup 默认的构造函数会起多少线程呢
 
@@ -398,7 +635,7 @@ public abstract class MultithreadEventLoopGroup extends MultithreadEventExecutor
     
 ```
 
-### 15，判断一个数是不是2的幂
+### 15 判断一个数是不是2的幂
 
 #### netty源码
 
@@ -444,7 +681,7 @@ private static boolean isPowerOfTwo(int val) {
 }
 ```
 
-### 16，项目中rabbitmq使用方式
+### 16 项目中rabbitmq使用方式
 
 * xml配置
 
@@ -539,3 +776,124 @@ public class BMqListenerService {
     }
 }
 ```
+
+### 17 What's the difference between SpringBoot and SpringCloud ?
+
+* springboot
+  Spring Boot makes it easy to create stand-alone, production-grade Spring based Applications that you can "just run".
+  We take an opinionated view of the Spring platform and third-party libraries so you can get started with minimum fuss. Most Spring Boot applications need minimal Spring configuration.
+  If you’re looking for information about a specific version, or instructions about how to upgrade from an earlier release, check out the project release notes section on our wiki.
+
+  **Features**
+  * Create stand-alone Spring applications
+  * Embed Tomcat, Jetty or Undertow directly (no need to deploy WAR files)
+  * Provide opinionated 'starter' dependencies to simplify your build configuration
+  * Automatically configure Spring and 3rd party libraries whenever possible
+  * Provide production-ready features such as metrics, health checks, and externalized configuration
+  * Absolutely no code generation and no requirement for XML configuration
+* spring cloud
+  Spring Cloud provides tools for developers to quickly build some of the common patterns in distributed systems (e.g. configuration management, service discovery, circuit breakers, intelligent routing, micro-proxy, control bus). Coordination of distributed systems leads to boiler plate patterns, and using Spring Cloud developers can quickly stand up services and applications that implement those patterns. They will work well in any distributed environment, including the developer’s own laptop, bare metal data centres, and managed platforms such as Cloud Foundry.
+* the difference
+  * SpringBoot focuses on the rapid and convenient development of individual microservices and SpringCloud focuses on the global service governance framework.
+  * SpringCloud is a microservice coordination and management framework that focuses on the overall situation. It integrates and manages individual microservices developed by SpringBoot.
+  * Provide integrated services between various microservices, such as configuration management, service discovery, circuit breakers, routing, microagents, event bus, global locks, decision-making campaigns, distributed conversations, etc.
+  * SpringBoot can leave SpringCloud to use development projects independently, but SpringCloud cannot do without SpringBoot, which belongs to the relationship of dependency
+
+### 18 What's the difference between SpringCloud and dubbo ?
+
+* (1) The service calling method
+  dubbo is RPC, springcloud Rest Api
+* (2) Registration center
+  dubbo is zookeeper and springcloud is eureka, or zookeeper
+* (3) Service gateway
+  * dubbo itself is not implemented, and can only be integrated through other third-party technologies.
+  * Springcloud has Zuul routing gateway as a routing server for consumer request distribution. Springcloud supports circuit breakers and is perfectly integrated with git. Configuration file support version Control, transaction bus to achieve configuration file update and service automatic assembly, and a series of microservice architecture elements.
+
+### 19 What's Cloud Native ?
+
+技术的变革，一定是思想先行，云原生是一种构建和运行应用程序的方法，是一套技术体系和方法论。云原生（CloudNative）是一个组合词，Cloud+Native。Cloud表示应用程序位于云中，而不是传统的数据中心；Native表示应用程序从设计之初即考虑到云的环境，原生为云而设计，在云上以最佳姿势运行，充分利用和发挥云平台的弹性+分布式优势。
+
+Pivotal公司的Matt Stine于2013年首次提出云原生（CloudNative）的概念；2015年，云原生刚推广时，Matt Stine在《迁移到云原生架构》一书中定义了符合云原生架构的几个特征：12因素、微服务、自敏捷架构、基于API协作、扛脆弱性；到了2017年，Matt Stine在接受InfoQ采访时又改了口风，将云原生架构归纳为模块化、可观察、可部署、可测试、可替换、可处理6特质；而Pivotal最新官网对云原生概括为4个要点：DevOps+持续交付+微服务+容器。
+微服务：几乎每个云原生的定义都包含微服务，跟微服务相对的是单体应用，微服务有理论基础，那就是康威定律，指导服务怎么切分，很玄乎，凡是能称为理论定律的都简单明白不了，不然就忒没b格，大概意思是组织架构决定产品形态，不知道跟马克思的生产关系影响生产力有无关系。
+
+* 微服务
+  微服务架构的好处就是按function切了之后，服务解耦，内聚更强，变更更易；另一个划分服务的技巧据说是依据DDD来搞。
+
+* 容器化
+  Docker是应用最为广泛的容器引擎，在思科谷歌等公司的基础设施中大量使用，是基于LXC技术搞的，容器化为微服务提供实施保障，起到应用隔离作用，K8S是容器编排系统，用于容器管理，容器间的负载均衡，谷歌搞的，Docker和K8S都采用Go编写，都是好东西。
+
+* DevOps
+  这是个组合词，Dev+Ops，就是开发和运维合体，不像开发和产品，经常刀刃相见，实际上DevOps应该还包括测试，DevOps是一个敏捷思维，是一个沟通文化，也是组织形式，为云原生提供持续交付能力。
+
+* 持续交付
+  持续交付是不误时开发，不停机更新，小步快跑，反传统瀑布式开发模型，这要求开发版本和稳定版本并存，其实需要很多流程和工具支撑。
+
+### 20 What's IaaS, Paas, SaaS ?
+
+* IaaS
+  Infrastructure as a server，把客户需要的基础设施环境搭建好，然后开放虚拟机或者硬件的租赁服务。
+* PaaS
+  Platform as a server，云端把客户所需的软件的平台作出租。云端已经给大家搭建好了平台。一般来说，在用户使用的时候，云端已经搭建好了操作系统、数据库、中间件，运行库等等。用户只需要在这个搭建好的平台上下载、安装并使用自己需要的软件就可以了。
+* SaaS
+  Software as a server，云端已经把操作系统、中间件、数据库、运行库、软件应用都部署好了。连软件都不用安装了，用户登录之后直接可以上手操作。
+
+### 21 Netty高性能的原因
+
+* 传统RPC调用性能差的三个原因
+  * 网络传输方式还在弊端  大多采用BIO
+  * Java序列化存在弊端
+    * 无法跨语言使用
+    * 序列化后的字节码流占用的空间太大
+    * 序列化性能差，在编解码过程中需要占用更高的CPU资源
+  * 线程模型存在弊端  传统RPC框架均采用BIO模型，这使得每个TCP连接都需要分配1个线程
+* Netty高性能的三个主题
+  * I/O传输模型
+  * 数据协议
+  * 线程模型
+* Netty高性能之核心法宝
+  * 异步非阻塞通信
+  * 零拷贝
+    * Netty接收和发送ByteBuffer采用DirectBuffer，使用堆外内存进行Socket读写，不需要进行字节缓冲区的二次拷贝。
+    * Netty提供了组合Buffer对象，可以聚合多个ByteBuffer对象，用户可以像操作一个Buffer那样方便地对组合Buffer进行操作
+    * Netty文件传输采用了transferTo()方法，它可以直接将文件缓冲区的数据发送到目标Channel，避免了传统通过循环write()方式导致的内存拷贝问题
+  * 内存池
+  * 高效的Reactor线程模型
+    * Reactor单 线程模型
+    * Reactor多 线程模型
+    * 主从Reactor多 线程模型    Netty官方推荐
+  * 无锁化的串行设计理念
+  * 高效的并发编程
+    * volatile
+    * CAS和原子类
+    * 线程安全容器
+    * 读写锁
+  * 支持多种高性能的序列化框架
+  * 灵活的TCP参数配置能力
+
+### 22 序列化与反序列化：通过网络传输结构化的数据
+
+在TCP的连接上，它传输数据的基本形式就是二进制流，也就是一段一段的1和0。在一般编程语言或者网络框架提供的API中，传输数据的基本形式是字节，也就是Byte。一个字节就是8个二进制位，8个Bit，所以在这里，二进制流和字节流本质上是一样的。对于我们编写的程序来说，它需要通过网络传输的数据是结构化的数据，比如，一条命令、一段文本或者一条消息。对应代码中，这些结构化的数据都可以用一个类或者一个结构体来表示。
+
+要想使用网络框架的API来传输结构化的数据，必须得先实现结构化的数据与字节流之间的双向转换。这种将结构化数据转换成字节流的过程，称为序列化，反过来转换，就是反序列化。序列化的用途除了用于在网络上传输数据以外，另外一个重要用途是，将结构化数据保存在文件中，因为文件内保存数据的形式也是二进制序列。
+
+问题：在内存里存放的任何数据，它最基础的存储单元也是二进制比特，也就是说，我们应用程序操作的对象，它在内存中也是使用二进制存储的，既然都是二进制，为什么不能直接把内存中，对象对应的二进制数据直接通过网络发送出去，或者保存在文件中呢？为什么还需要序列化和反序列化呢？
+<https://www.cnblogs.com/chjxbt/p/11458815.html>
+
+### 23 Netty的编解码
+
+* 编码（Encode）：序列化，将对象序列化为字节数组
+* 解码（Decode）：反序列化，把从网络、磁盘等读取的字节数组还原成原始对象
+* 常用的解码器
+  * ByteToMessageDecoder
+  * LineBasedFrameDecoder
+  * DelimiterBasedFrameDecoder
+  * FixedLengthFrameDecoder
+  * LengthFieldBasedFrameDecoder
+
+### 24 分布式锁的实现方式
+
+* 基于数据库
+  * 类的全路径名 + 方法名 是唯一索引
+  * mysql的InnoDB的表锁：select xxx from table where lock_name = 'yyy' for update
+* Redis
+* Zookeeper
