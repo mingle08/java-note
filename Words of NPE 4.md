@@ -112,7 +112,7 @@
 ### unit 4
 
 * abate
-* allegatation
+* allegation
 * caption
 * wreck
 * snag
