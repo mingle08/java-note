@@ -6,7 +6,7 @@
 
 * recount
 * saga
-* anthropoligist
+* anthropologist
 * flint
 * rot
 * census
