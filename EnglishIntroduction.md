@@ -4,11 +4,8 @@
 
 ### 1 Tell me about yourself
 
-  Good afternoon, I am glad to have this opportunity. I come from Hubei Province, but I stay in Shenzhen. I received a Bachelor's degree in Biology Engineering from Yanshan University in 2005, and received a Master’s degree in Chemistry from Tsinghua University in 2011.
-  My first job was as a drug researcher in a small company named Tiandakang. This company tried to make a new anti-cancer drug, using a plasmid carring adenovirus gene. I worked there for less than 3 years. During this time, I kept studying English and took part in gre and tofle exam. Meantime,I tried to change my career. I don’t want to do biology research job any more.
-  I hesitated for a long time considering whether I should give up my majar. It’s hard to decide. Finally, I made the decision to be a java programmer and prepared for it in Octobor 2015, after studying for 6 months, I got my first job as a programmer. The company named Gaoxinwen gave me a chance. I really appreciated the boss who interviewed me.  
-  One year later, I joined an outsource company named Tuobao, and I was dispatched to Ping’an Bank, where I worked for one year.  
-  Then I entered the company of Lakala and worked here almost 4 years. This is where I actually improve my programming skills. As a distributed system, we use the popular softwares like spring, springmvc, mybatis, dubbo, rabbitmq and so on. I am responsible for 3 subsystems.
+  Good afternoon, I am glad to have this opportunity. I come from Hubei Province. I received a Bachelor's degree in Biology Engineering from Yanshan University in 2005, and received a Master’s degree in Chemistry from Tsinghua University in 2011.
+  I did work related to biology for nearly 5 years, then I turn to be a java programmer. Now I have worked as a java programmer for six years. The business of last company is credit business.
 
   I have been a Java Developer for 6 years now and since I first started work, I have constantly sought to improve and develop my skills.
   I am proficient with programming languages; I have an inquisitive nature that ensures I analyze my work and the problems I encounter in detail; I am quick to learn new concepts and can apply them to a variety of situations, and I am a strong team worker who can collaborate with and work alongside others to complete challenging projects and also resolve complex issues and problems.
