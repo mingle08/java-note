@@ -4,14 +4,15 @@
 
 ### 1 Tell me about yourself
 
-  Good afternoon, I am glad to have this opportunity. I come from Hubei Province. I received a Bachelor's degree in Biology Engineering from Yanshan University in 2005, and received a Master’s degree in Chemistry from Tsinghua University in 2011.
-  I did work related to biology for nearly 5 years, then I turn to be a java programmer. Now I have worked as a java programmer for six years. The business of last company is credit business.
+  Good morning, my name is Huxiangming. I come from Hubei Province. I received a Bachelor's degree in Biology Engineering from Yanshan University in 2005, and received a Master’s degree in Chemistry from Tsinghua University in 2011.
+  I did work related to biology after graduate, then I changed my career to be a java programmer. The first project I was working on was Ans cloud management playform project. It's a hardware device, similar to F5, has a function of load balancing. I was responsible for the refactor the management system by java. The second project I worked in is Pocket banking app of PingAn Bank.
+  I was responsible for:
+  And the third project was collection business project of a credit loan system. The technology involved include: spring batch, springmvc, mybatis, dubbo, rabbitmq, docker, etc. The loan system consisted of several subsystems, and I was responsible for 3 of them: collect system, pay front system, and sms system.
+  The last project was loan assistance and guarantee project. A guarantee company gave the bank where the customer borrow money from a guarantee that if the customer failed to repay all money back, the guarantee company will pay for the customer, and became the new creditor. The customer should pay the money to the guarantee company,not the bank.
 
-  I have been a Java Developer for 6 years now and since I first started work, I have constantly sought to improve and develop my skills.
-  I am proficient with programming languages; I have an inquisitive nature that ensures I analyze my work and the problems I encounter in detail; I am quick to learn new concepts and can apply them to a variety of situations, and I am a strong team worker who can collaborate with and work alongside others to complete challenging projects and also resolve complex issues and problems.
-  I am highly self-motivated, technically astute and you can rely on me to get up to speed quickly in the role whilst being a cooperative, responsive and adaptable member of your team.
+  since I first started work, I have constantly sought to improve and develop my skills.
 
-  That’s all, thank you for giving me the chance.
+  That’s all, thank you.
 
 ### 2 personality may use
 
