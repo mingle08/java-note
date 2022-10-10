@@ -40,6 +40,7 @@ git clone git@gitee.com:mingle08/java-note.git
   |⌥space| 查看光标处的方法、类的定义|/|
   |⌘⇧F|全局查找|Ctrl + Shift + F|
   |⌥⇧↓ / ⌥⇧↑|移动当前行向下/向上|Ctrl + Shift + ↓ / ↑|
+  |⌥⌘|代码跳转的向前/向后|Alt + ← / → |
 
 * visual studio code
   |MAC|名称|WINDOWS|
