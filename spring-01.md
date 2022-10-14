@@ -2676,3 +2676,51 @@ private Object resolveReference(Object argName, RuntimeBeanReference ref) {
   ```
 
   ![springboot中web服务器](assets/SpringBootSmartLifecycle.png)
+
+### 21 Spring Security权限管理
+
+* AbstractSecurityInterceptor
+    -> FilterSecurityInterceptor
+    -> MethodSecurityInterceptor
+* 前置处理器
+  * 投票器  AccessDecisionVoter
+  * 决策器  AccessDecisionManager  -> AbstractAccessDecisionManager
+      -> AffirmativeBased
+      -> UnanimousBased
+      -> ConsensusBased
+* 后置处理器  AfterInvocationManager -> AfterInvocationProviderManager
+  * AfterInvocationProvider
+      -> AbstractAclProvider -> AclEntryAfterInvocationProvider
+      -> PostInvocationAdviceProvider
+![AfterInvocationProviderManager](assets/AfterInvocationProviderManager.png)
+
+* 权限元数据
+  * ConfigAttribute
+        -> PostInvocationAttribute
+        -> AbstractExpressionBasedMethodConfigAttribute
+            -> PostInvocationExpressionAttribute
+            -> PreInvocationExpressionAttribute
+        -> PreInvocationAttribute
+        -> WebExpressionConfigAttribute
+        -> SecurityConfig
+            -> Jsr250SecurityConfig
+  * SecurityMetadataSource
+        -> FilterInvocationSecurityMetadataSource
+            -> DefaultFilterInvocationSecurityMetadataSource
+                -> ExpressionBasedFilterInvocationSecurityMetadataSource
+        -> MethodSecurityMetadataSource
+            -> AbstractMethodSecurityMetadataSource
+                -> DelegatingMethodSecurityMetadataSource
+                -> PrePostAnnotationSecurityMetadataSource
+                -> AbstractFallbackMethodSecurityMetadataSource
+                    -> SecuredAnnotationSecurityMetadataSource
+                    -> MapBasedMethodSecurityMetadataSource
+                    -> Jsr250MethodSecurityMetadataSource
+
+* 权限表达式
+  * SecurityExpressionOperations
+        -> MethodSecurityExpressionOperations
+            -> MethodSecurityExpressionRoot
+        -> SecurityExpressionRoot
+            -> MethodSecurityExpressionRoot
+            -> WebSecurityExpressionRoot
