@@ -2724,3 +2724,15 @@ private Object resolveReference(Object argName, RuntimeBeanReference ref) {
         -> SecurityExpressionRoot
             -> MethodSecurityExpressionRoot
             -> WebSecurityExpressionRoot
+
+### Spring Data JPA
+
+  ```java
+  List<Person> findByAddress_ZipCode
+  ```
+
+* 方法名的下划线的作用是什么？
+![method name with underscore](assets/Jpa_PropertyPath_from_underline.png)
+
+* Spring官方文档的说明
+![Spring Specification](assets/SpringDataJPA_underscore.png)
