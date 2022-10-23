@@ -2688,6 +2688,7 @@ private Object resolveReference(Object argName, RuntimeBeanReference ref) {
       -> AffirmativeBased
       -> UnanimousBased
       -> ConsensusBased
+    ![AccessDecisionManager](assets/AccessDecisionManager.png)
 * 后置处理器  AfterInvocationManager -> AfterInvocationProviderManager
   * AfterInvocationProvider
       -> AbstractAclProvider -> AclEntryAfterInvocationProvider
@@ -2704,6 +2705,7 @@ private Object resolveReference(Object argName, RuntimeBeanReference ref) {
         -> WebExpressionConfigAttribute
         -> SecurityConfig
             -> Jsr250SecurityConfig
+    ![ConfigAttribute](assets/ConfigAttribute.png)
   * SecurityMetadataSource
         -> FilterInvocationSecurityMetadataSource
             -> DefaultFilterInvocationSecurityMetadataSource
@@ -2716,7 +2718,7 @@ private Object resolveReference(Object argName, RuntimeBeanReference ref) {
                     -> SecuredAnnotationSecurityMetadataSource
                     -> MapBasedMethodSecurityMetadataSource
                     -> Jsr250MethodSecurityMetadataSource
-
+    ![SecurityMetadataSource](assets/SecurityMetadataSource.png)
 * 权限表达式
   * SecurityExpressionOperations
         -> MethodSecurityExpressionOperations
@@ -2724,6 +2726,7 @@ private Object resolveReference(Object argName, RuntimeBeanReference ref) {
         -> SecurityExpressionRoot
             -> MethodSecurityExpressionRoot
             -> WebSecurityExpressionRoot
+    ![SecurityExpressionOperations](assets/SecurityExpressionOperations.png)
 
 ### Spring Data JPA
 
