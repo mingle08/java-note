@@ -2728,7 +2728,7 @@ private Object resolveReference(Object argName, RuntimeBeanReference ref) {
             -> WebSecurityExpressionRoot
     ![SecurityExpressionOperations](assets/SecurityExpressionOperations.png)
 
-### Spring Data JPA
+### 22 Spring Data JPA
 
   ```java
   List<Person> findByAddress_ZipCode
@@ -2739,3 +2739,45 @@ private Object resolveReference(Object argName, RuntimeBeanReference ref) {
 
 * Spring官方文档的说明
 ![Spring Specification](assets/SpringDataJPA_underscore.png)
+
+### 23 Entity在PersistenceContext中的状态
+
+* New状态
+    （1）New状态的实体ID和Version字段都是Null;
+    （2）New状态的实体没有在PersistenceContext中出现过
+* Detached状态
+  * 与New状态对象的不同点：
+    * （1）Detached状态有持久化ID
+    * （2）变成持久化对象需要进行merge操作，merge操作会复制一个新的实体对象，然后把新的实体对象变成Managed状态
+  * 与New状态对象的相同点：
+    * 都与PersistenceContext脱离了关系
+    * 当执行flush操作或者commit操作的时候，不会进行数据库同步
+* Managed状态
+  * 与数据库的数据有映射关系
+  * 在Session生命周期中，任何从数据库里面查询到的Entity都会自动成为Managed状态
+  * Managed状态的Entity要同步到数据库里，必须执行EntityManager的flush方法，也就是说，对Entity对象做的任何增删改查，必须通过entityManager.flush()执行之后才会变成SQL同步到DB里面。
+* Removed状态
+  * 与Detached状态对象的不同点：不在PersistenceContext里面
+  * 与Detached状态对象的相同点：都有ID属性
+
+![Entity在JPA中的4种状态](assets/entityStatusOfJpa.png)
+
+### 24 JPA中的@Query注解
+
+```java
+public interface UserDtoRepository extends JpaRepository<User, Long> {
+    @Query("select u from User where u.name = ?1")
+    User findByName(String name);
+
+    @Query("select u from User u where u.firstname = :firstname or u.lastname = :lastname")
+    User findByLastnameOrFirstname(@Param("lastname") String lastname,
+                                    @Param("firstname") String firstname);
+
+}
+```
+
+![annotation Query in JPA 1](assets/JPA%E4%B8%AD%E7%9A%84%40Query%E6%B3%A8%E8%A7%A3-1.png);
+![annotation Query in JPA 2](assets/JPA%E4%B8%AD%E7%9A%84%40Query%E6%B3%A8%E8%A7%A3-2.png);
+![annotation Query in JPA 3](assets/JPA%E4%B8%AD%E7%9A%84%40Query%E6%B3%A8%E8%A7%A3-3.png);
+![annotation Query in JPA 4](assets/JPA%E4%B8%AD%E7%9A%84%40Query%E6%B3%A8%E8%A7%A3-4.png);
+![annotation Query in JPA 5](assets/JPA%E4%B8%AD%E7%9A%84%40Query%E6%B3%A8%E8%A7%A3-5.png);
