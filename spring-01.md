@@ -2762,22 +2762,202 @@ private Object resolveReference(Object argName, RuntimeBeanReference ref) {
 
 ![Entity在JPA中的4种状态](assets/entityStatusOfJpa.png)
 
-### 24 JPA中的@Query注解
+### 24 JPA中的常用注解
 
-```java
-public interface UserDtoRepository extends JpaRepository<User, Long> {
-    @Query("select u from User where u.name = ?1")
-    User findByName(String name);
+* @Query注解
 
-    @Query("select u from User u where u.firstname = :firstname or u.lastname = :lastname")
-    User findByLastnameOrFirstname(@Param("lastname") String lastname,
-                                    @Param("firstname") String firstname);
+    ```java
+    public interface UserDtoRepository extends JpaRepository<User, Long> {
+        @Query("select u from User where u.name = ?1")
+        User findByName(String name);
 
-}
-```
+        @Query("select u from User u where u.firstname = :firstname or u.lastname = :lastname")
+        User findByLastnameOrFirstname(@Param("lastname") String lastname,
+                                        @Param("firstname") String firstname);
 
-![annotation Query in JPA 1](assets/JPA%E4%B8%AD%E7%9A%84%40Query%E6%B3%A8%E8%A7%A3-1.png);
-![annotation Query in JPA 2](assets/JPA%E4%B8%AD%E7%9A%84%40Query%E6%B3%A8%E8%A7%A3-2.png);
-![annotation Query in JPA 3](assets/JPA%E4%B8%AD%E7%9A%84%40Query%E6%B3%A8%E8%A7%A3-3.png);
-![annotation Query in JPA 4](assets/JPA%E4%B8%AD%E7%9A%84%40Query%E6%B3%A8%E8%A7%A3-4.png);
-![annotation Query in JPA 5](assets/JPA%E4%B8%AD%E7%9A%84%40Query%E6%B3%A8%E8%A7%A3-5.png);
+    }
+    ```
+
+    ![annotation Query in JPA 1](assets/JPA%E4%B8%AD%E7%9A%84%40Query%E6%B3%A8%E8%A7%A3-1.png);
+    ![annotation Query in JPA 2](assets/JPA%E4%B8%AD%E7%9A%84%40Query%E6%B3%A8%E8%A7%A3-2.png);
+    ![annotation Query in JPA 3](assets/JPA%E4%B8%AD%E7%9A%84%40Query%E6%B3%A8%E8%A7%A3-3.png);
+    ![annotation Query in JPA 4](assets/JPA%E4%B8%AD%E7%9A%84%40Query%E6%B3%A8%E8%A7%A3-4.png);
+    ![annotation Query in JPA 5](assets/JPA%E4%B8%AD%E7%9A%84%40Query%E6%B3%A8%E8%A7%A3-5.png);
+
+* @NoRepositoryBean
+
+    ```text
+    The intermediate repository interface is annotated with @NoRepositoryBean. Make sure you add that annotation to all repository interfaces for which Spring Data should not create instances at runtime.
+    ```
+
+* JPA中的联合主键
+
+  * @IdClass
+    * 第一步，新建一个UserInfoID类，里面是联合主键
+
+      ```java
+      package com.example.jpa.example1;
+      import lombok.AllArgsConstructor;
+      import lombok.Builder;
+      import lombok.Data;
+      import lombok.NoArgsConstructor;
+      import java.io.Serielizable;
+
+      @Data
+      @Builder
+      @AllArgsConstructor
+      @NoArgsConstructor
+      public class UserInfoID implements Serializable {
+          private String name, telephone;
+      }
+      ```
+
+    * 第二步，新建一个UserInfo实体，采用@IdClass引用联合主键类
+
+      ```java
+      @Entity
+      @Data
+      @Builder
+      @IdClass(UserInfoID.class)
+      @AllArgsConstructor
+      @NoArgsConstructor
+      public class UserInfo {
+          private Integer ages;
+          @Id
+          private String name;
+          @Id
+          private String telephone;
+      }
+      ```
+
+  * @Embeddable与@EmbeddedId
+    * 第一步：在上面的例子中的UserInfoID里面添加@Embeddable注解
+
+      ```java
+      @Data
+      @Builder
+      @AllArgsConstructor
+      @NoArgsConstructor
+      @Embeddable
+      public class UserInfoID implements Serializable {
+          private String name, telephone;
+      }
+      ```
+
+    * 第二步，改一下刚才的UserInfo对象，删除@IdClass，添加@EmbeddedId注解
+
+      ```java
+      @Entity
+      @Data
+      @Builder
+      //@IdClass(UserInfoID.class)
+      @AllArgsConstructor
+      @NoArgsConstructor
+      public class UserInfo {
+          private Integer ages;
+          //@Id
+          //private String name;
+          //@Id
+          //private String telephone;
+          @EmbededId
+          private UserInfoID userInfoID;
+      }
+      ```
+
+* @ManyToOne和@OneToMany
+  * 一般成对使用，表示双向关联关系。而JPA协议中也明确规定：维护关联关系的是拥有外键的一方，而另一方必须配置mappedBy.
+  
+  ```java
+  public @interface ManyToOne {
+    Class targetEntity() default void.class;
+    CascadeType[] cascade() default {};
+    FetchType fetch() default EAGER;
+    boolean optional() default true;
+  }
+
+  public @interface OneToMany {
+    Class targetEntity() default void.class;
+    CascadeType[] cascade() default {};
+    FetchType fetch() default LAZY;
+    String mappedBy() default "";
+    boolean orphanRemoval() default false;
+  }
+  ```
+
+  * 看一个例子，假设User有多个地址，看看实体应该如何建立。
+
+  ```java
+  @Entity
+  @Data
+  @Builder
+  @AllArgsConstructor
+  @NoArgsConstructor
+  public class User implements Serializable {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+    private String name;
+    private String email;
+    private String sex;
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private List<UserAddress> address;
+  }
+
+  @Entity
+  @Data
+  @Builder
+  @AllArgsConstructor
+  @NoArgsConstructor
+  @ToString(exclude = "user")
+  public class UserAddress {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+    private String address;
+
+    @ManyToMany(cascade = CascadeType.ALL)
+    private User user;
+  }
+  ```
+
+  * 利用@ManyToOne和@OneToMany表达多对多的关联关系
+    * 新建一张表user_room_relation来存储双方的关联关系和额外字段
+
+    ```java
+    @Entity
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public class UserRoomRelation {
+        @Id
+        @GeneratedValue(strategy = GenerationType.AUTO)
+        private Long id;
+        private Date createTime, updateTime;
+
+        @ManyToOne
+        private Room room;
+
+        @ManyToOne
+        private User user;
+    }
+
+    public class User implements Serializable {
+        @Id
+        @GeneratedValue(strategy = GenerationType.AUTO)
+        private Long id;
+
+        @OneToMany(mappedBy = "user")
+        private List<UserRoomRelation> userRoomRelations;
+    }
+
+    public class Room {
+        @Id
+        @GeneratedValue(strategy = GenerationType.AUTO)
+        private Long id;
+
+        @OneToMany(mappedBy = "room")
+        private List<UserRoomRelation> userRoomRelations;
+    }
+    ```
