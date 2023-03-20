@@ -897,3 +897,14 @@ Pivotal公司的Matt Stine于2013年首次提出云原生（CloudNative）的概
   * mysql的InnoDB的表锁：select xxx from table where lock_name = 'yyy' for update
 * Redis
 * Zookeeper
+
+### 25 下载文件：不带扩展名
+
+* 需求：下载的文件，文件名不带扩展名：abc（不是abc.txt)
+* 问题：下载得到的文件名自动带有.xml，例如abc.xml
+
+```java
+response.addHeader("Content-Disposition", "attachment; filename=\"" + filename +"\"");
+// 加上这句就解决了（支持不带扩展名）
+response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+```
