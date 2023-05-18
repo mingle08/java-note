@@ -151,7 +151,8 @@ $vars      取出变量结果
 #### 10.2 执行过程
 
 ```shell
-awk -F "," 'BEGIN{print "name"}NR==2{print $2}END{print "end of file"}' oldboy.txt
+# column t是美化输出结果，对齐
+awk -F "," 'BEGIN{print "name"}NR==2{print $2}END{print "end of file"}' oldboy.txt | column t
 ```
 
 * BEGIN
@@ -178,3 +179,30 @@ awk -F "," 'BEGIN{print "name"}NR==2{print $2}END{print "end of file"}' oldboy.t
 * 取列
   * -F 指定分隔符：指定每一列的结束标记（默认是空格、连续的空格、tab键)
   * $数字  取出某一列
+  * $NF  表示最后一列
+
+### 11 括号的使用
+
+#### 11.1 小括号()
+
+* 单括号 ( command )                 子shell执行命令
+* 双括号 (( digit expression ))      高级数学表达式
+
+#### 11.2 中括号[]
+
+* 单括号 [ condition ]                  与test命令等效
+
+  * 数值比较
+  * 字符串比较
+  * 文件比较
+* 双括号 [[ string expression ]]    字符串比较的高级特性
+
+### 12 退出状态码
+
+* 对于成功结束的命令，其退出状态码是0.
+* 对于因错误而结束的命令，其退出状态码是一个正整数
+
+### 13 shell中的if-then语句
+
+* 如果if后面的命令的退出状态码为0，那么位于then部分的命令就会被执行。
+* 如果该命令的退出状态码是其他值，则then部分的命令不会被执行。
