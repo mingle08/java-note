@@ -2961,3 +2961,37 @@ private Object resolveReference(Object argName, RuntimeBeanReference ref) {
         private List<UserRoomRelation> userRoomRelations;
     }
     ```
+
+### 25 JPA中的Auditing
+
+* Auditing是什么
+  * @CreatedBy
+  * @CreatedDate
+  * @LastModifiedBy
+  * @LastModifiedDate
+* Auditing实现方式
+  * 直接在实例里面添加4个注解
+  * 在实体里面实现Auditable接口
+  * 利用@MappedSuperclass
+    * 在第一种的基础上，把4个注解和@EntityListeners(AuditingEntityListener.class)移到一个父类里，比如BaseEntity
+    * 在此父类，比如BaseEntity上添加@MappedSuperclass注解
+* 开启JPA的Auditing功能
+  * 注解  @EnableJpaAuditing
+  
+    ```java
+    @Configuration
+    @EnableJpaAuditing
+    class Config {
+
+        @Bean
+        public AuditorAware<AuditableUser> auditorProvider() {
+            return new AuditorAwareImpl();
+        }
+    }
+    ```
+
+  * xml  <jpa:auditing>标签
+
+    ```xml
+    <jpa:auditing auditor-aware-ref="yourAuditorAwareBean" />
+    ```
