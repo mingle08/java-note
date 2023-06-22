@@ -2993,5 +2993,38 @@ private Object resolveReference(Object argName, RuntimeBeanReference ref) {
   * xml  <jpa:auditing>标签
 
     ```xml
-    <jpa:auditing auditor-aware-ref="yourAuditorAwareBean" />
+    <!-- example 1 -->
+    <jpa:auditing auditor-aware-ref="yourAuditorAwareBean" date-time-provider-ref="yourDatetimeProvider" />
+    
+    <!-- example 2  git link: 
+    https://github.com/pkainulainen/spring-data-jpa-examples/blob/master/query-methods/src/main/resources/applicationContext-persistence.xml-->
+
+    <bean id="auditingProvider" class="net.petrikainulainen.springdata.jpa.common.UsernameAuditorAware"/>
+
+    <bean id="dateTimeProvider" class="net.petrikainulainen.springdata.jpa.common.AuditingDateTimeProvider">
+        <constructor-arg index="0" ref="dateTimeService"/>
+    </bean>
+
+    <jpa:auditing auditor-aware-ref="auditingProvider" set-dates="true"/>
     ```
+
+    ![jpa-1.8.xsd](assets/jpa-1.8-xsd.png)
+    ![jpa-repository.xsd](assets/jpa-repository-xsd-audit.png)
+
+### 26 ApplicationContext继承了MessageSource接口
+
+  ```java
+    public interface ApplicationContext extends EnvironmentCapable, ListableBeanFactory, HierarchicalBeanFactory, MessageSource, ApplicationEventPublisher, ResourcePatternResolver {
+        ...
+    }
+
+    // from Internationalization using MessageSource in spring.io
+    public static void main(final String[] args) {
+        MessageSource resources = new ClassPathXmlApplicationContext("beans.xml");
+        String message = resources.getMessage("argument.required",
+            new Object [] {"userDao"}, "Required", Locale.UK);
+        System.out.println(message);
+    }
+  ```
+
+  ![ApplicationContext-MessageSource](assets/ApplicationContext%E7%BB%A7%E6%89%BF%E5%9B%BE.png)
