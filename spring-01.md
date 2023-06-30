@@ -826,157 +826,157 @@ BeanDefinitionParserDelegate  定义解析Element的各种方法
 
   * 配置文件的封装
 
-![img_6.png](assets/img_6_resource类.png)
+    ![img_6.png](assets/img_6_resource类.png)
 
-```java
-    // AbstractAutowireCapableBeanFactory
-    public AbstractAutowireCapableBeanFactory() {
-        this.instantiationStrategy = new CglibSubclassingInstantiationStrategy();
-        this.parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
-        this.allowCircularReferences = true;
-        this.allowRawInjectionDespiteWrapping = false;
-        this.ignoredDependencyTypes = new HashSet();
-        this.ignoredDependencyInterfaces = new HashSet();
-        this.currentlyCreatedBean = new NamedThreadLocal("Currently created bean");
-        this.factoryBeanInstanceCache = new ConcurrentHashMap();
-        this.factoryMethodCandidateCache = new ConcurrentHashMap();
-        this.filteredPropertyDescriptorsCache = new ConcurrentHashMap();
-        this.ignoreDependencyInterface(BeanNameAware.class);
-        this.ignoreDependencyInterface(BeanFactoryAware.class);
-        this.ignoreDependencyInterface(BeanClassLoaderAware.class);
-    }
+    ```java
+        // AbstractAutowireCapableBeanFactory
+        public AbstractAutowireCapableBeanFactory() {
+            this.instantiationStrategy = new CglibSubclassingInstantiationStrategy();
+            this.parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
+            this.allowCircularReferences = true;
+            this.allowRawInjectionDespiteWrapping = false;
+            this.ignoredDependencyTypes = new HashSet();
+            this.ignoredDependencyInterfaces = new HashSet();
+            this.currentlyCreatedBean = new NamedThreadLocal("Currently created bean");
+            this.factoryBeanInstanceCache = new ConcurrentHashMap();
+            this.factoryMethodCandidateCache = new ConcurrentHashMap();
+            this.filteredPropertyDescriptorsCache = new ConcurrentHashMap();
+            this.ignoreDependencyInterface(BeanNameAware.class);
+            this.ignoreDependencyInterface(BeanFactoryAware.class);
+            this.ignoreDependencyInterface(BeanClassLoaderAware.class);
+        }
 
-    public void ignoreDependencyInterface(Class<?> ifc) {
-        this.ignoredDependencyInterfaces.add(ifc);
-    }
+        public void ignoreDependencyInterface(Class<?> ifc) {
+            this.ignoredDependencyInterfaces.add(ifc);
+        }
 
-    protected boolean isExcludedFromDependencyCheck(PropertyDescriptor pd) {
-        return AutowireUtils.isExcludedFromDependencyCheck(pd) || this.ignoredDependencyTypes.contains(pd.getPropertyType()) || AutowireUtils.isSetterDefinedInInterface(pd, this.ignoredDependencyInterfaces);
-    }
-```
+        protected boolean isExcludedFromDependencyCheck(PropertyDescriptor pd) {
+            return AutowireUtils.isExcludedFromDependencyCheck(pd) || this.ignoredDependencyTypes.contains(pd.getPropertyType()) || AutowireUtils.isSetterDefinedInInterface(pd, this.ignoredDependencyInterfaces);
+        }
+    ```
 
-ignoreDependencyInterface方法的主要是忽略给定接口的自动装配功能，那么这样做的目的是什么？
-举例来说，当A中有属性B，那么当Spring在获取A的Bean的时候如果其属性B还没初始化，那么Spring会自动初始化B。但是，某些情况下，B不会被初始化，其中的一种情况就是B实现了BeanNameAware接口。
-Spring中是这样介绍的：自动装配时忽略给定的接口依赖，典型应用是通过其他方式解析Application上下文注册依赖，类似于BeanFactory通过BeanFactoryAware进行注入或者ApplicationContext通过ApplicationContextAware进行注入
+    ignoreDependencyInterface方法的主要是忽略给定接口的自动装配功能，那么这样做的目的是什么？
+    举例来说，当A中有属性B，那么当Spring在获取A的Bean的时候如果其属性B还没初始化，那么Spring会自动初始化B。但是，某些情况下，B不会被初始化，其中的一种情况就是B实现了BeanNameAware接口。
+    Spring中是这样介绍的：自动装配时忽略给定的接口依赖，典型应用是通过其他方式解析Application上下文注册依赖，类似于BeanFactory通过BeanFactoryAware进行注入或者ApplicationContext通过ApplicationContextAware进行注入
 
   * 加载Bean
 
-```java
-public class XmlBeanFactory extends DefaultListableBeanFactory {
-    private final XmlBeanDefinitionReader reader;
+    ```java
+    public class XmlBeanFactory extends DefaultListableBeanFactory {
+        private final XmlBeanDefinitionReader reader;
 
-    public XmlBeanFactory(Resource resource) throws BeansException {
-        this(resource, (BeanFactory)null);
+        public XmlBeanFactory(Resource resource) throws BeansException {
+            this(resource, (BeanFactory)null);
+        }
+
+        public XmlBeanFactory(Resource resource, BeanFactory parentBeanFactory) throws BeansException {
+            super(parentBeanFactory);
+            this.reader = new XmlBeanDefinitionReader(this);
+            /** 加载Bean
+             * 1，封装资源文件。当进入XmlBeanDefinitionReader后首先对参数Resource使用EncodedResource封装
+             * 2，获取输入流。从Resource中获取对应的InputStream并构造InputSource
+             * 3，通过构造的InputSource实例和Resource实例继续调用函数doLoadBeanDefinitions.
+             * 注意：InputSource这个类并不来自于Spring，它的全路径是org.xml.sax.InputSource
+             */
+            this.reader.loadBeanDefinitions(resource);
+        }
     }
+    ```
 
-    public XmlBeanFactory(Resource resource, BeanFactory parentBeanFactory) throws BeansException {
-        super(parentBeanFactory);
-        this.reader = new XmlBeanDefinitionReader(this);
-        /** 加载Bean
-         * 1，封装资源文件。当进入XmlBeanDefinitionReader后首先对参数Resource使用EncodedResource封装
-         * 2，获取输入流。从Resource中获取对应的InputStream并构造InputSource
-         * 3，通过构造的InputSource实例和Resource实例继续调用函数doLoadBeanDefinitions.
-         * 注意：InputSource这个类并不来自于Spring，它的全路径是org.xml.sax.InputSource
+    InputSource，EntityResolver都在jdk中
+    ![img_7.png](assets/img_7_InputSource类.png)
+
+    ```java
+        // XmlBeanDefinitionReader
+        protected int doLoadBeanDefinitions(InputSource inputSource, Resource resource)
+                throws BeanDefinitionStoreException {
+
+            try {
+                // 1，获取对XML文件的验证模式
+                // 2，加载XML文件，并得到对应的Document
+                Document doc = doLoadDocument(inputSource, resource);
+                // 3，根据返回的Document注册Bean信息
+                int count = registerBeanDefinitions(doc, resource);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Loaded " + count + " bean definitions from " + resource);
+                }
+                return count;
+            }
+            catch (BeanDefinitionStoreException ex) {
+                throw ex;
+            }
+            catch (SAXParseException ex) {
+                throw new XmlBeanDefinitionStoreException(resource.getDescription(),
+                        "Line " + ex.getLineNumber() + " in XML document from " + resource + " is invalid", ex);
+            }
+            catch (SAXException ex) {
+                throw new XmlBeanDefinitionStoreException(resource.getDescription(),
+                        "XML document from " + resource + " is invalid", ex);
+            }
+            catch (ParserConfigurationException ex) {
+                throw new BeanDefinitionStoreException(resource.getDescription(),
+                        "Parser configuration exception parsing XML from " + resource, ex);
+            }
+            catch (IOException ex) {
+                throw new BeanDefinitionStoreException(resource.getDescription(),
+                        "IOException parsing XML document from " + resource, ex);
+            }
+            catch (Throwable ex) {
+                throw new BeanDefinitionStoreException(resource.getDescription(),
+                        "Unexpected exception parsing XML document from " + resource, ex);
+            }
+        }
+
+        /**
+         * Actually load the specified document using the configured DocumentLoader.
+         * @param inputSource the SAX InputSource to read from
+         * @param resource the resource descriptor for the XML file
+         * @return the DOM Document
+         * @throws Exception when thrown from the DocumentLoader
+         * @see #setDocumentLoader
+         * @see DocumentLoader#loadDocument
          */
-        this.reader.loadBeanDefinitions(resource);
-    }
-}
-```
+        protected Document doLoadDocument(InputSource inputSource, Resource resource) throws Exception {
+            return this.documentLoader.loadDocument(inputSource, getEntityResolver(), this.errorHandler,
+                    getValidationModeForResource(resource), isNamespaceAware());
+        }
+    ```
 
-InputSource，EntityResolver都在jdk中
-![img_7.png](assets/img_7_InputSource类.png)
-
-```java
-    // XmlBeanDefinitionReader
-    protected int doLoadBeanDefinitions(InputSource inputSource, Resource resource)
-            throws BeanDefinitionStoreException {
-
-        try {
-            // 1，获取对XML文件的验证模式
-            // 2，加载XML文件，并得到对应的Document
-            Document doc = doLoadDocument(inputSource, resource);
-            // 3，根据返回的Document注册Bean信息
-            int count = registerBeanDefinitions(doc, resource);
-            if (logger.isDebugEnabled()) {
-                logger.debug("Loaded " + count + " bean definitions from " + resource);
+    ```java
+        // XmlValidationModeDetector
+        public int detectValidationMode(InputStream inputStream) throws IOException {
+            // Peek into the file to look for DOCTYPE.
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            try {
+                boolean isDtdValidated = false;
+                String content;
+                while ((content = reader.readLine()) != null) {
+                    content = consumeCommentTokens(content);
+                    if (this.inComment || !StringUtils.hasText(content)) {
+                        continue;
+                    }
+                    // Spring用来检测验证模式的办法就是判断是否包含DOCTYPE，如果包含就是DTD，否则就是XSD
+                    if (hasDoctype(content)) {
+                        isDtdValidated = true;
+                        break;
+                    }
+                    if (hasOpeningTag(content)) {
+                        // End of meaningful data...
+                        break;
+                    }
+                }
+                return (isDtdValidated ? VALIDATION_DTD : VALIDATION_XSD);
             }
-            return count;
-        }
-        catch (BeanDefinitionStoreException ex) {
-            throw ex;
-        }
-        catch (SAXParseException ex) {
-            throw new XmlBeanDefinitionStoreException(resource.getDescription(),
-                    "Line " + ex.getLineNumber() + " in XML document from " + resource + " is invalid", ex);
-        }
-        catch (SAXException ex) {
-            throw new XmlBeanDefinitionStoreException(resource.getDescription(),
-                    "XML document from " + resource + " is invalid", ex);
-        }
-        catch (ParserConfigurationException ex) {
-            throw new BeanDefinitionStoreException(resource.getDescription(),
-                    "Parser configuration exception parsing XML from " + resource, ex);
-        }
-        catch (IOException ex) {
-            throw new BeanDefinitionStoreException(resource.getDescription(),
-                    "IOException parsing XML document from " + resource, ex);
-        }
-        catch (Throwable ex) {
-            throw new BeanDefinitionStoreException(resource.getDescription(),
-                    "Unexpected exception parsing XML document from " + resource, ex);
-        }
-    }
-
-    /**
-     * Actually load the specified document using the configured DocumentLoader.
-     * @param inputSource the SAX InputSource to read from
-     * @param resource the resource descriptor for the XML file
-     * @return the DOM Document
-     * @throws Exception when thrown from the DocumentLoader
-     * @see #setDocumentLoader
-     * @see DocumentLoader#loadDocument
-     */
-    protected Document doLoadDocument(InputSource inputSource, Resource resource) throws Exception {
-        return this.documentLoader.loadDocument(inputSource, getEntityResolver(), this.errorHandler,
-                getValidationModeForResource(resource), isNamespaceAware());
-    }
-```
-
-```java
-    // XmlValidationModeDetector
-    public int detectValidationMode(InputStream inputStream) throws IOException {
-        // Peek into the file to look for DOCTYPE.
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-        try {
-            boolean isDtdValidated = false;
-            String content;
-            while ((content = reader.readLine()) != null) {
-                content = consumeCommentTokens(content);
-                if (this.inComment || !StringUtils.hasText(content)) {
-                    continue;
-                }
-                // Spring用来检测验证模式的办法就是判断是否包含DOCTYPE，如果包含就是DTD，否则就是XSD
-                if (hasDoctype(content)) {
-                    isDtdValidated = true;
-                    break;
-                }
-                if (hasOpeningTag(content)) {
-                    // End of meaningful data...
-                    break;
-                }
+            catch (CharConversionException ex) {
+                // Choked on some character encoding...
+                // Leave the decision up to the caller.
+                return VALIDATION_AUTO;
             }
-            return (isDtdValidated ? VALIDATION_DTD : VALIDATION_XSD);
+            finally {
+                reader.close();
+            }
         }
-        catch (CharConversionException ex) {
-            // Choked on some character encoding...
-            // Leave the decision up to the caller.
-            return VALIDATION_AUTO;
-        }
-        finally {
-            reader.close();
-        }
-    }
-```
+    ```
 
 ### 11 Spring事务怎么实现回滚
 
