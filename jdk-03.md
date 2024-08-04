@@ -121,3 +121,94 @@
   * 能被4整除的数字，其二进制表示的最后两位一定是00.
   * 十进制的3，二进制表示为0000 0011。
   * 如果prolepticYear的最后两位是00，那么prolepticYear & 3的结果一定也是0.
+
+### 62 计算某月份有多少天
+* 代码
+  ```java
+    public int calcDaysOfMonth(Integer month) {
+      return  (month < 8) ^ (month % 2 == 0) ? 31:30-2*(month ==2) 
+    }
+  ```
+
+* 代码解析
+  ```java
+    (month < 8) ^ (month % 2 == 0) ? 31:30-2*(month ==2) 
+  ```
+  * (month < 8) ^ (month % 2 == 0)
+    * month < 8，当month为1、3、5、7时，结果为true
+    * month % 2 == 0，当month为2、4、6、8、10、12时，结果为true
+    * 1 ^ true = 0
+    * 3 ^ true = 0
+    * 5 ^ true = 0
+    * 7 ^ true = 0
+    * 2 ^ true = 1
+    * 4 ^ true = 1
+    * 6 ^ true = 1
+    * 8 ^ true = 1
+    * 10 ^ true = 1
+    * 12 ^ true = 1
+
+  * 30-2*(month ==2)
+    * month == 2，当month为2时，结果为true
+    * 30-2*true = 28
+    * 30-2*false = 30
+
+### 63 计算某天是星期几
+* 代码
+  ```java
+    int dow(int y, int m, int d) {
+        //int[] arr = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
+        y -= m < 3;
+    // return (y + y / 4 - y / 100 + y / 400 + arr[m - 1] + d) % 7;
+    return (y + y / 4 - y / 100 + y / 400 + "-bed=pen+mad."[m] + d) % 7;
+  }
+  ```
+
+### 64 找出数组中只出现一次的数
+Given an array of integers, every element appears three times except for one. Find that single one.
+
+public int singleNumber(int[] A) {
+    int ones = 0, twos = 0;
+    for(int i = 0; i < A.length; i++){
+        ones = (ones ^ A[i]) & ~twos;
+        twos = (twos ^ A[i]) & ~ones;
+    }
+    return ones;
+}
+
+### 65 Long中的lowestOneBit方法
+* 代码
+  ```java
+    public static int lowestOneBit(long i) {
+        return (int)(i & -i);
+    }
+  ```
+
+* 代码解析
+  ```java
+    i & -i
+  ```
+  * -i
+    * i的二进制表示
+      ```java
+        0000 0000 0000 0000 0000 0000 0000 0101
+      ```
+    * 取反
+      ```java
+        1111 1111 1111 1111 1111 1111 1111 1010
+      ```
+    * 加1
+      ```java
+        1111 1111 1111 1111 1111 1111 1111 1011
+      ```
+  * i & -i
+      ```java
+        0000 0000 0000 0000 0000 0000 0000 0101
+      ```
+      ```java
+        1111 1111 1111 1111 1111 1111 1111 1011
+      ```
+      ```java
+        0000 0000 0000 0000 0000 0000 0000 0001
+      ```
+  * 这个方法是求：最右边的1，代表的十进制数值是多少。
