@@ -212,3 +212,16 @@ public int singleNumber(int[] A) {
         0000 0000 0000 0000 0000 0000 0000 0001
       ```
   * 这个方法是求：最右边的1，代表的十进制数值是多少。
+
+### 66 HashMap的get方法与containsKey方法
+* 代码
+  ```java
+    public V get(Object key) {
+        Node<K,V> e;
+        return (e = getNode(hash(key), key)) == null ? null : e.value;
+    }
+
+    public boolean containsKey(Object key) {
+        return getNode(hash(key), key) != null;
+    }
+  ```
